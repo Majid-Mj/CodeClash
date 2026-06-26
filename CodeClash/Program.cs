@@ -1,22 +1,65 @@
-var builder = WebApplication.CreateBuilder(args);
+name: Build and deploy ASP.Net Core app to Azure Web App - codeclash
 
-// Add services to the container.
-builder.Services.AddControllers();
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-// Learn more about configuring Swagger/OpenAPI
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+permissions:
+  id-token: write
+  contents: read
 
-var app = builder.Build();
+jobs:
+  build:
+    runs-on: windows-latest
 
-// Enable Swagger in all environments
-app.UseSwagger();
-app.UseSwaggerUI();
+    steps:
+      - uses: actions/checkout@v4
 
-app.UseHttpsRedirection();
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
 
-app.UseAuthorization();
+      - name: Build with dotnet
+        run: dotnet build --configuration Release
+        working-directory: ./CodeClash
 
-app.MapControllers();
+      - name: dotnet publish
+        run: dotnet publish -c Release -o ./publish
+        working-directory: ./CodeClash
 
-app.Run();
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: .net-app
+          path: ./CodeClash/publish
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-app
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_FD508D61F6E4417A97D64241332A90C7 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7C0E74C8201945959D35BC0548B4488E }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_994A26F2CB50494FAA6ED46463EE2056 }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'codeclash'
+          slot-name: 'Production'
+          package: .

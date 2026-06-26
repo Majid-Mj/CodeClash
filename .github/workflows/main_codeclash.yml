@@ -52,7 +52,6 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          # ✅ EXACT secret names from your GitHub repo
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_FD508D61F6E4417A97D64241332A90C7 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7C0E74C8201945959D35BC0548B4488E }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_994A26F2CB50494FAA6ED46463EE2056 }}

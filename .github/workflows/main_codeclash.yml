@@ -1,3 +1,6 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
 name: Build and deploy ASP.Net Core app to Azure Web App - codeclash
 
 on:
@@ -6,13 +9,11 @@ on:
       - main
   workflow_dispatch:
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -24,37 +25,35 @@ jobs:
 
       - name: Build with dotnet
         run: dotnet build --configuration Release
-        working-directory: ./CodeClash
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o ./publish
-        working-directory: ./CodeClash
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ./CodeClash/publish
+          path: ${{env.DOTNET_ROOT}}/myapp
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_FD508D61F6E4417A97D64241332A90C7 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7C0E74C8201945959D35BC0548B4488E }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_994A26F2CB50494FAA6ED46463EE2056 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F8C1E39BD1534D709A775F22AACD806B }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_349773EF9C1A4EFF8435105099FAFC5C }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A61910F64F5242B3BC02CE19502DA3C9 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -63,3 +62,4 @@ jobs:
           app-name: 'codeclash'
           slot-name: 'Production'
           package: .
+          

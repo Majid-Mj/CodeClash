@@ -49,7 +49,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<st
         string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password, workFactor: 12);
 
         // 3 — Create User entity
-        var user = User.Create(dto.FullName, username, dto.Email, passwordHash, dto.PhoneNumber);
+        var user = User.Create(dto.FullName, username, dto.Email.ToLower(), passwordHash, dto.PhoneNumber);
 
         // 4 — Persist user in database
         await _context.Users.AddAsync(user, ct);

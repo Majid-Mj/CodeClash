@@ -14,7 +14,8 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 
         RuleFor(x => x.Dto.Email)
             .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("A valid email address is required.");
+            .EmailAddress().WithMessage("A valid email address is required.")
+            .Must(email => string.IsNullOrEmpty(email) || email == email.ToLower()).WithMessage("Email must contain only lowercase letters.");
 
         RuleFor(x => x.Dto.PhoneNumber)
             .NotEmpty().WithMessage("Phone number is required.")

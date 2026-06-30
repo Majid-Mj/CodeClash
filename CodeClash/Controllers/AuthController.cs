@@ -3,6 +3,7 @@ using CodeClash.API.Extensions;
 using CodeClash.Application.Features.Auth.Commands.Login;
 using CodeClash.Application.Features.Auth.Commands.Logout;
 using CodeClash.Application.Features.Auth.Commands.Register;
+using CodeClash.Application.Features.Auth.Commands.RefreshToken;
 using CodeClash.Application.Features.Auth.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -97,5 +98,27 @@ public class AuthController : ControllerBase
             return BadRequest(ApiResponse<object>.Fail(result.Errors, result.Message));
 
         return Ok(ApiResponse<object>.Ok(null, result.Message));
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // POST /api/v1/auth/refresh
+    // ─────────────────────────────────────────────────────────────
+    /// <summary>Refreshes the access token using a valid refresh token.</summary>
+    /// <response code="200">Token refreshed successfully</response>
+    /// <response code="400">Invalid or expired refresh token</response>
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Refresh(
+        [FromBody] RefreshTokenRequestDto dto,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(new RefreshTokenCommand(dto), ct);
+
+        if (!result.IsSuccess)
+            return BadRequest(ApiResponse<AuthResponseDto>.Fail(result.Errors, result.Message));
+
+        return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data, result.Message));
     }
 }

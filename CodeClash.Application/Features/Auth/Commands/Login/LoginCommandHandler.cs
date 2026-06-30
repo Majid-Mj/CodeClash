@@ -49,7 +49,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
 
         // 5 — Persist refresh token
         int expiryDays = int.Parse(_config["JwtSettings:RefreshTokenExpiryDays"] ?? "7");
-        var refreshToken = RefreshToken.Create(hashedRefreshToken, user.Id, expiryDays, request.DeviceInfo);
+        var refreshToken = CodeClash.Domain.Entities.RefreshToken.Create(hashedRefreshToken, user.Id, expiryDays, request.DeviceInfo);
         await _context.RefreshTokens.AddAsync(refreshToken, ct);
         await _context.SaveChangesAsync(ct);
 

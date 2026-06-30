@@ -37,7 +37,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-        ClockSkew = TimeSpan.Zero // Set skew to zero for precise token expiration check
+        ClockSkew = TimeSpan.Zero   // zero tolerance on token expiry
     };
 
     options.Events = new JwtBearerEvents
@@ -219,7 +219,7 @@ if (app.Environment.IsDevelopment())
 // ── 8. Middleware pipeline ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Enable Swagger in all environments (as required by main branch deploy config)
+// Enable Swagger in all environments (as required by deployment configuration)
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {

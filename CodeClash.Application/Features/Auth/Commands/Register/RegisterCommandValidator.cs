@@ -18,8 +18,8 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
             .Must(email => string.IsNullOrEmpty(email) || email == email.ToLower()).WithMessage("Email must contain only lowercase letters.");
 
         RuleFor(x => x.Dto.PhoneNumber)
-            .NotEmpty().WithMessage("Phone number is required.")
-            .Matches(@"^[0-9]{10}$").WithMessage("Phone number must be exactly 10 digits and contain only numbers (cannot start with alphabets or special characters).");
+            .Matches(@"^[0-9]{10}$").WithMessage("Phone number must be exactly 10 digits and contain only numbers (cannot start with alphabets or special characters).")
+            .When(x => !string.IsNullOrEmpty(x.Dto.PhoneNumber));
 
         RuleFor(x => x.Dto.Password)
             .NotEmpty().WithMessage("Password is required.")

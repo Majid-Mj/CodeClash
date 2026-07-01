@@ -11,6 +11,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Threading.RateLimiting;
 using AspNet.Security.OAuth.GitHub;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -199,6 +200,15 @@ builder.Services.AddSwaggerGen(options =>
 
 // ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
+
+// Configure Forwarded Headers for Azure App Service/SSL termination
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
 
 // ── 7. Auto-migrate on startup (dev convenience; remove for prod) ─────────────
 if (app.Environment.IsDevelopment())

@@ -21,6 +21,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion(r => r.ToString(), s => Enum.Parse<UserRole>(s))
             .HasMaxLength(20);
         builder.Property(u => u.IsActive).IsRequired().HasDefaultValue(true);
+        builder.Property(u => u.GithubId).HasMaxLength(100);
         builder.Property(u => u.CreatedAt).IsRequired();
         builder.Property(u => u.UpdatedAt).IsRequired();
 

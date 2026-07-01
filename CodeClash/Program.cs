@@ -126,8 +126,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
-        policy.WithOrigins(
-            builder.Configuration["App:FrontendUrl"] ?? "http://localhost:4200")
+        policy.SetIsOriginAllowed(origin => true)
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials());

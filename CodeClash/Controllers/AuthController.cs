@@ -85,6 +85,11 @@ public class AuthController : ControllerBase
         if (!result.IsSuccess)
             return Unauthorized(ApiResponse<AuthResponseDto>.Fail(result.Errors, result.Message));
 
+        if (result.Data != null)
+        {
+            AppendRefreshTokenCookie(result.Data.RefreshToken);
+        }
+
         return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data, result.Message));
     }
 
@@ -104,11 +109,25 @@ public class AuthController : ControllerBase
         [FromBody] LogoutRequestDto dto,
         CancellationToken ct)
     {
+        string? token = dto.RefreshToken;
+        if (string.IsNullOrEmpty(token))
+        {
+            Request.Cookies.TryGetValue("refreshToken", out token);
+        }
+
+        var cmdDto = new LogoutRequestDto(token ?? string.Empty, dto.AllDevices);
         Guid userId = User.GetUserId();
-        var result = await _mediator.Send(new LogoutCommand(dto, userId), ct);
+        var result = await _mediator.Send(new LogoutCommand(cmdDto, userId), ct);
 
         if (!result.IsSuccess)
             return BadRequest(ApiResponse<object>.Fail(result.Errors, result.Message));
+
+        Response.Cookies.Delete("refreshToken", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
 
         return Ok(ApiResponse<object>.Ok(null, result.Message));
     }
@@ -123,19 +142,26 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Refresh(
-        [FromBody] RefreshTokenRequestDto dto,
-        CancellationToken ct)
+    public async Task<IActionResult> Refresh(CancellationToken ct)
     {
+        if (!Request.Cookies.TryGetValue("refreshToken", out string? refreshToken) || string.IsNullOrEmpty(refreshToken))
+        {
+            return BadRequest(ApiResponse<AuthResponseDto>.Fail("Refresh token is missing from cookies."));
+        }
+
+        var dto = new RefreshTokenRequestDto(refreshToken);
         var result = await _mediator.Send(new RefreshTokenCommand(dto), ct);
 
         if (!result.IsSuccess)
             return BadRequest(ApiResponse<AuthResponseDto>.Fail(result.Errors, result.Message));
 
+        if (result.Data != null)
+        {
+            AppendRefreshTokenCookie(result.Data.RefreshToken);
+        }
+
         return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data, result.Message));
     }
-
-
 
     /// <summary>
     /// Auth Using GitHub
@@ -225,9 +251,21 @@ public class AuthController : ControllerBase
         await _context.SaveChangesAsync(ct);
 
         // 6. Redirect to Angular Application
+        AppendRefreshTokenCookie(rawRefreshToken);
+
         string frontendUrl = _config["App:FrontendUrl"] ?? "http://localhost:4200";
         return Redirect($"{frontendUrl}/auth-success?token={accessToken}&refreshToken={rawRefreshToken}");
     }
 
-
+    private void AppendRefreshTokenCookie(string refreshToken)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Expires = DateTime.UtcNow.AddDays(7)
+        };
+        Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+    }
 }

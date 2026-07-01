@@ -11,8 +11,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.API.Controllers;
 
@@ -22,10 +21,20 @@ namespace CodeClash.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly CodeClash.Application.Common.Interfaces.IApplicationDbContext _context;
+    private readonly CodeClash.Application.Common.Interfaces.IJwtService _jwtService;
+    private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
 
-    public AuthController(IMediator mediator)
+    public AuthController(
+        IMediator mediator,
+        CodeClash.Application.Common.Interfaces.IApplicationDbContext context,
+        CodeClash.Application.Common.Interfaces.IJwtService jwtService,
+        Microsoft.Extensions.Configuration.IConfiguration config)
     {
         _mediator = mediator;
+        _context = context;
+        _jwtService = jwtService;
+        _config = config;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -127,25 +136,97 @@ public class AuthController : ControllerBase
     }
 
 
-    [HttpGet("github-callback")]
-    public async Task<IActionResult> GitHubCallback()
-    {
-        // Authenticate the request using Cookie authentication
-        var result = await HttpContext.AuthenticateAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
 
-        if (!result.Succeeded)
+    /// <summary>
+    /// Auth Using GitHub
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("github-login")]
+    public IActionResult GitHubLogin()
+    {
+        var properties = new AuthenticationProperties
         {
-            return BadRequest(ApiResponse<object>.Fail("GitHub authentication failed.", "Unauthorized"));
+            RedirectUri = Url.Action(nameof(GitHubCallback))
+        };
+
+        return Challenge(properties, GitHubAuthenticationDefaults.AuthenticationScheme);
+    }
+
+
+    [HttpGet("github-callback")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GitHubCallback(CancellationToken ct)
+    {
+        // 1. Authenticate using the Cookie scheme (populated by AddGitHub OAuth handler)
+        var result = await HttpContext.AuthenticateAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+        if (!result.Succeeded || result.Principal == null)
+        {
+            return BadRequest(ApiResponse<object>.Fail("GitHub authentication failed or was cancelled.", "OAuthError"));
         }
 
-        // Retrieve claims (e.g., email, name) returned by GitHub
-        var claims = result.Principal?.Identities.FirstOrDefault()?.Claims;
-        var email = claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
-        var name = claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Name)?.Value;
+        // 2. Extract Claims
+        var claims = result.Principal.Claims;
+        var email = result.Principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value 
+                    ?? result.Principal.FindFirst("urn:github:email")?.Value;
+        var name = result.Principal.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value 
+                   ?? result.Principal.FindFirst("urn:github:name")?.Value 
+                   ?? "GitHub User";
+        var githubId = result.Principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                       ?? result.Principal.FindFirst("urn:github:id")?.Value;
 
-        // TODO: Perform your application's login logic here (e.g., find or create user, generate JWT token)
+        if (string.IsNullOrEmpty(email))
+        {
+            return BadRequest(ApiResponse<object>.Fail("Could not retrieve email from GitHub profile.", "OAuthError"));
+        }
 
-        return Ok(ApiResponse<object>.Ok(new { Name = name, Email = email }, "GitHub Login Successful"));
+        // 3. User Upsert (Lookup by email, or create new)
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email.ToLower(), ct);
+
+        if (user == null)
+        {
+            // Generate a unique username
+            var username = result.Principal.FindFirst("urn:github:login")?.Value 
+                           ?? email.Split('@')[0] 
+                           ?? Guid.NewGuid().ToString("N").Substring(0, 8);
+
+            var baseUsername = username;
+            int counter = 1;
+            while (await _context.Users.AnyAsync(u => u.Username == username.ToLower(), ct))
+            {
+                username = $"{baseUsername}{counter++}";
+            }
+
+            user = CodeClash.Domain.Entities.User.CreateGitHub(name, username, email, githubId ?? string.Empty);
+            await _context.Users.AddAsync(user, ct);
+            await _context.SaveChangesAsync(ct);
+        }
+        else
+        {
+            // If user exists but doesn't have GithubId, update it
+            if (string.IsNullOrEmpty(user.GithubId))
+            {
+                user.LinkGitHub(githubId ?? string.Empty);
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync(ct);
+            }
+        }
+
+        // 4. Generate standard JWT tokens
+        string accessToken = _jwtService.GenerateAccessToken(user);
+        string rawRefreshToken = _jwtService.GenerateRawRefreshToken();
+        string hashedRefreshToken = _jwtService.HashToken(rawRefreshToken);
+
+        // 5. Persist the Refresh Token
+        int expiryDays = int.Parse(_config["JwtSettings:RefreshTokenExpiryDays"] ?? "7");
+        string deviceInfo = Request.Headers.UserAgent.ToString();
+        var refreshToken = CodeClash.Domain.Entities.RefreshToken.Create(hashedRefreshToken, user.Id, expiryDays, deviceInfo);
+        
+        await _context.RefreshTokens.AddAsync(refreshToken, ct);
+        await _context.SaveChangesAsync(ct);
+
+        // 6. Redirect to Angular Application
+        string frontendUrl = _config["App:FrontendUrl"] ?? "http://localhost:4200";
+        return Redirect($"{frontendUrl}/auth-success?token={accessToken}&refreshToken={rawRefreshToken}");
     }
 
 

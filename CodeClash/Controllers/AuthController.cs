@@ -1,14 +1,18 @@
+using AspNet.Security.OAuth.GitHub;
 using CodeClash.API.Common;
 using CodeClash.API.Extensions;
 using CodeClash.Application.Features.Auth.Commands.Login;
 using CodeClash.Application.Features.Auth.Commands.Logout;
-using CodeClash.Application.Features.Auth.Commands.Register;
 using CodeClash.Application.Features.Auth.Commands.RefreshToken;
+using CodeClash.Application.Features.Auth.Commands.Register;
 using CodeClash.Application.Features.Auth.DTOs;
 using MediatR;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers;
 
@@ -121,4 +125,28 @@ public class AuthController : ControllerBase
 
         return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data, result.Message));
     }
+
+
+    [HttpGet("github-callback")]
+    public async Task<IActionResult> GitHubCallback()
+    {
+        // Authenticate the request using Cookie authentication
+        var result = await HttpContext.AuthenticateAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(ApiResponse<object>.Fail("GitHub authentication failed.", "Unauthorized"));
+        }
+
+        // Retrieve claims (e.g., email, name) returned by GitHub
+        var claims = result.Principal?.Identities.FirstOrDefault()?.Claims;
+        var email = claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
+        var name = claims?.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Name)?.Value;
+
+        // TODO: Perform your application's login logic here (e.g., find or create user, generate JWT token)
+
+        return Ok(ApiResponse<object>.Ok(new { Name = name, Email = email }, "GitHub Login Successful"));
+    }
+
+
 }

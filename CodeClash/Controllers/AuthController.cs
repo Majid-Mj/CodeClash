@@ -23,6 +23,7 @@ public class AuthController : ControllerBase
     {
         _mediator = mediator;
     }
+    //Checks
 
     // ─────────────────────────────────────────────────────────────
     // POST /api/v1/auth/register

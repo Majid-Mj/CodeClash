@@ -218,6 +218,7 @@ if (app.Environment.IsDevelopment())
 
 // ── 8. Middleware pipeline ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseStaticFiles();
 
 // Enable Swagger in all environments (as required by deployment configuration)
 app.UseSwagger();

@@ -2,6 +2,7 @@ using CodeClash.API.Middleware;
 using CodeClash.Application;
 using CodeClash.Infrastructure;
 using CodeClash.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Threading.RateLimiting;
+using AspNet.Security.OAuth.GitHub;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,7 +71,17 @@ builder.Services.AddAuthentication(options =>
             await context.Response.WriteAsync(json);
         }
     };
+})
+.AddCookie()
+.AddGitHub(options =>
+{
+    options.ClientId = builder.Configuration["GitHub:ClientId"]!;
+    options.ClientSecret = builder.Configuration["GitHub:ClientSecret"]!;
+    options.Scope.Add("user:email");
+    options.CallbackPath = "/api/auth/github-callback";
+    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 });
+
 
 builder.Services.AddAuthorization(options =>
 {
@@ -188,6 +201,15 @@ builder.Services.AddSwaggerGen(options =>
 
 // ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
+
+// Configure Forwarded Headers for Azure App Service/SSL termination
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
 
 // ── 7. Auto-migrate on startup (dev convenience; remove for prod) ─────────────
 if (app.Environment.IsDevelopment())

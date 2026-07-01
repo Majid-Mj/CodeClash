@@ -1,5 +1,6 @@
-﻿using CodeClash.Application.Common.Interfaces;
+using CodeClash.Application.Common.Interfaces;
 using CodeClash.Infrastructure.Persistence;
+using CodeClash.Infrastructure.Persistence.Repositories;
 using CodeClash.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -22,9 +23,13 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(
             provider => provider.GetRequiredService<ApplicationDbContext>());
 
+        // Repositories
+        services.AddScoped<IUserRepository, UserRepository>();
+
         // Services
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IFileStorageService, FileStorageService>();
 
         return services;
     }

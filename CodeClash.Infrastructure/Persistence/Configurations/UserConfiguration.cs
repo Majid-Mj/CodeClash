@@ -13,6 +13,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasKey(u => u.Id);
 
         builder.Property(u => u.FullName).IsRequired().HasMaxLength(100);
+        builder.Property(u => u.ProfileImageUrl).HasMaxLength(500);
         builder.Property(u => u.Username).IsRequired().HasMaxLength(30);
         builder.Property(u => u.Email).IsRequired().HasMaxLength(256);
         builder.Property(u => u.PasswordHash).IsRequired();
@@ -20,6 +21,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion(r => r.ToString(), s => Enum.Parse<UserRole>(s))
             .HasMaxLength(20);
         builder.Property(u => u.IsActive).IsRequired().HasDefaultValue(true);
+        builder.Property(u => u.GithubId).HasMaxLength(100);
         builder.Property(u => u.CreatedAt).IsRequired();
         builder.Property(u => u.UpdatedAt).IsRequired();
 

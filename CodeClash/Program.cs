@@ -2,6 +2,7 @@ using CodeClash.API.Middleware;
 using CodeClash.Application;
 using CodeClash.Infrastructure;
 using CodeClash.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Threading.RateLimiting;
+using AspNet.Security.OAuth.GitHub;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,7 +70,17 @@ builder.Services.AddAuthentication(options =>
             await context.Response.WriteAsync(json);
         }
     };
+})
+.AddCookie()
+.AddGitHub(options =>
+{
+    options.ClientId = builder.Configuration["GitHub:ClientId"]!;
+    options.ClientSecret = builder.Configuration["GitHub:ClientSecret"]!;
+    options.Scope.Add("user:email");
+    options.CallbackPath = "/api/auth/github-callback";
+    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 });
+
 
 builder.Services.AddAuthorization(options =>
 {
@@ -218,6 +230,7 @@ if (app.Environment.IsDevelopment())
 
 // ── 8. Middleware pipeline ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseStaticFiles();
 
 // Enable Swagger in all environments (as required by deployment configuration)
 app.UseSwagger();

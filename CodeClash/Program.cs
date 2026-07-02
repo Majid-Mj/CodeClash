@@ -127,8 +127,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
-        policy.WithOrigins(
-            builder.Configuration["App:FrontendUrl"] ?? "http://localhost:4200")
+        policy.SetIsOriginAllowed(origin => true)
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials());
@@ -240,6 +239,7 @@ if (app.Environment.IsDevelopment())
 
 // ── 8. Middleware pipeline ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseStaticFiles();
 
 // Enable Swagger in all environments (as required by deployment configuration)
 app.UseSwagger();

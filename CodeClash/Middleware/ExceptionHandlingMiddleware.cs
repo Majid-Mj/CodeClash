@@ -40,22 +40,8 @@ public class ExceptionHandlingMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception occurred");
-            
-            var errors = new List<string> { ex.Message };
-            if (ex.InnerException != null)
-            {
-                errors.Add($"Inner Exception: {ex.InnerException.Message}");
-            }
-
-            // Debug request cookies and metadata
-            var cookieList = string.Join(", ", context.Request.Cookies.Select(c => $"{c.Key}"));
-            errors.Add($"Cookies received: {cookieList}");
-            errors.Add($"Request: {context.Request.Method} {context.Request.Scheme}://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}");
-            
-            errors.Add(ex.StackTrace ?? string.Empty);
-
             await WriteResponse(context, HttpStatusCode.InternalServerError,
-                ApiResponse<object>.Fail(errors, "Internal server error"));
+                ApiResponse<object>.Fail("An unexpected error occurred. Please try again later."));
         }
     }
 

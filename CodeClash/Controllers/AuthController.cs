@@ -141,7 +141,6 @@ public class AuthController : ControllerBase
     /// Auth Using GitHub
     /// </summary>
     /// <returns></returns>
-    [HttpGet("github-login")]
     [HttpGet("/api/auth/github-login")]
     public IActionResult GitHubLogin()
     {
@@ -154,7 +153,6 @@ public class AuthController : ControllerBase
     }
 
 
-    [HttpGet("github-callback")]
     [HttpGet("/api/auth/github-callback")]
     [AllowAnonymous]
     public async Task<IActionResult> GitHubCallback(CancellationToken ct)

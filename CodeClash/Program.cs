@@ -244,8 +244,6 @@ using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 await db.Database.MigrateAsync();
 
-if (app.Environment.IsDevelopment())
-{
     // Seed Admin User
     var adminUsername = "Admin123";
     var adminEmail = "admin@codeclash.com";
@@ -264,7 +262,6 @@ if (app.Environment.IsDevelopment())
         await db.Users.AddAsync(adminUser);
         await db.SaveChangesAsync();
     }
-}
 
 // ── 8. Middleware pipeline ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();

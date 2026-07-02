@@ -1,18 +1,19 @@
+using AspNet.Security.OAuth.GitHub;
 using CodeClash.API.Middleware;
 using CodeClash.Application;
 using CodeClash.Infrastructure;
 using CodeClash.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Threading.RateLimiting;
-using AspNet.Security.OAuth.GitHub;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -140,6 +141,13 @@ builder.Services.AddRateLimiter(options =>
     {
         opt.Window = TimeSpan.FromMinutes(15);
         opt.PermitLimit = 10;
+        opt.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("admin-write", opt =>
+    {
+        opt.Window = TimeSpan.FromHours(1);
+        opt.PermitLimit = 100;
         opt.QueueLimit = 0;
     });
 });

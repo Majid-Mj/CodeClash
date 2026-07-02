@@ -2,16 +2,21 @@ using CodeClash.Application.Common.Interfaces;
 using CodeClash.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
-using System.Reflection.Emit;
 
 namespace CodeClash.Infrastructure.Persistence;
 
 public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options) { }
 
+    // ── Auth ──────────────────────────────────────────────────────────────────
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    // ── Problems (new) ────────────────────────────────────────────────────────
+    public DbSet<Problem> Problems => Set<Problem>();
+    public DbSet<TestCase> TestCases => Set<TestCase>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

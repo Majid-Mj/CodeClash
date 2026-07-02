@@ -169,6 +169,7 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [HttpGet("/api/auth/github-login")]
+    [HttpGet("/api/v1/auth/github-login")]
     public IActionResult GitHubLogin()
     {
         var properties = new AuthenticationProperties

@@ -95,6 +95,8 @@ builder.Services.AddAuthentication(options =>
     options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
     options.CorrelationCookie.SameSite = SameSiteMode.Lax;
     options.CorrelationCookie.HttpOnly = true;
+    options.CorrelationCookie.Path = "/";
+    options.CorrelationCookie.IsEssential = true;
 });
 
 

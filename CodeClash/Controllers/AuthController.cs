@@ -174,16 +174,16 @@ public class AuthController : ControllerBase
     {
         var properties = new AuthenticationProperties
         {
-            RedirectUri = Url.Action(nameof(GitHubCallback))
+            RedirectUri = Url.Action(nameof(GitHubSuccess))
         };
 
         return Challenge(properties, GitHubAuthenticationDefaults.AuthenticationScheme);
     }
 
-
-    [HttpGet("/api/auth/github-callback")]
+    [HttpGet("/api/auth/github-success")]
+    [HttpGet("/api/v1/auth/github-success")]
     [AllowAnonymous]
-    public async Task<IActionResult> GitHubCallback(CancellationToken ct)
+    public async Task<IActionResult> GitHubSuccess(CancellationToken ct)
     {
         // 1. Authenticate using the Cookie scheme (populated by AddGitHub OAuth handler)
         var result = await HttpContext.AuthenticateAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);

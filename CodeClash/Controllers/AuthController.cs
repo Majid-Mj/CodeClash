@@ -17,7 +17,6 @@ namespace CodeClash.API.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
-[Route("api/auth")]
 [Produces("application/json")]
 public class AuthController : ControllerBase
 {
@@ -143,6 +142,7 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [HttpGet("github-login")]
+    [HttpGet("/api/auth/github-login")]
     public IActionResult GitHubLogin()
     {
         var properties = new AuthenticationProperties
@@ -155,6 +155,7 @@ public class AuthController : ControllerBase
 
 
     [HttpGet("github-callback")]
+    [HttpGet("/api/auth/github-callback")]
     [AllowAnonymous]
     public async Task<IActionResult> GitHubCallback(CancellationToken ct)
     {

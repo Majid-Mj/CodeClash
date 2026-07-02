@@ -40,8 +40,16 @@ public class ExceptionHandlingMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception occurred");
+            
+            var errors = new List<string> { ex.Message };
+            if (ex.InnerException != null)
+            {
+                errors.Add($"Inner Exception: {ex.InnerException.Message}");
+            }
+            errors.Add(ex.StackTrace ?? string.Empty);
+
             await WriteResponse(context, HttpStatusCode.InternalServerError,
-                ApiResponse<object>.Fail("An unexpected error occurred. Please try again later.", "Internal server error"));
+                ApiResponse<object>.Fail(errors, "Internal server error"));
         }
     }
 

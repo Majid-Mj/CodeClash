@@ -210,13 +210,13 @@ forwardedOptions.KnownNetworks.Clear();
 forwardedOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedOptions);
 
-// ── 7. Auto-migrate on startup (dev convenience; remove for prod) ─────────────
+// ── 7. Auto-migrate on startup (ensures Azure DB is migrated) ─────────────────
+using var scope = app.Services.CreateScope();
+var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+await db.Database.MigrateAsync();
+
 if (app.Environment.IsDevelopment())
 {
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
-
     // Seed Admin User
     var adminUsername = "Admin123";
     var adminEmail = "admin@codeclash.com";

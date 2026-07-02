@@ -26,8 +26,12 @@ var dpFolder = !string.IsNullOrEmpty(homePath)
     ? Path.Combine(homePath, "ASP.NET", "DataProtection-Keys")
     : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".aspnet", "DataProtection-Keys");
 
+// Ensure the directory exists
+Directory.CreateDirectory(dpFolder);
+
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(dpFolder));
+    .PersistKeysToFileSystem(new DirectoryInfo(dpFolder))
+    .SetApplicationName("CodeClash");
 
 // ── 2. JWT Authentication ─────────────────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

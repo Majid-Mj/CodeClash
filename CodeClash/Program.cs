@@ -12,12 +12,22 @@ using System.Text;
 using System.Threading.RateLimiting;
 using AspNet.Security.OAuth.GitHub;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ── 1. Clean Architecture layers ─────────────────────────────────────────────
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// ── Data Protection Key Persistence ───────────────────────────────────────────
+var homePath = Environment.GetEnvironmentVariable("HOME");
+var dpFolder = !string.IsNullOrEmpty(homePath)
+    ? Path.Combine(homePath, "ASP.NET", "DataProtection-Keys")
+    : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".aspnet", "DataProtection-Keys");
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dpFolder));
 
 // ── 2. JWT Authentication ─────────────────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -83,7 +93,7 @@ builder.Services.AddAuthentication(options =>
     
     // Enforce secure cookie policies for Azure/reverse proxy compatibility
     options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.CorrelationCookie.SameSite = SameSiteMode.None;
+    options.CorrelationCookie.SameSite = SameSiteMode.Lax;
     options.CorrelationCookie.HttpOnly = true;
 });
 

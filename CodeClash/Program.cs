@@ -80,6 +80,11 @@ builder.Services.AddAuthentication(options =>
     options.Scope.Add("user:email");
     options.CallbackPath = "/api/auth/github-callback";
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    
+    // Enforce secure cookie policies for Azure/reverse proxy compatibility
+    options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.CorrelationCookie.SameSite = SameSiteMode.None;
+    options.CorrelationCookie.HttpOnly = true;
 });
 
 

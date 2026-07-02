@@ -17,6 +17,7 @@ namespace CodeClash.API.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
+[Route("api/auth")]
 [Produces("application/json")]
 public class AuthController : ControllerBase
 {

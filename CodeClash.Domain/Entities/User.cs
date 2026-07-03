@@ -17,6 +17,10 @@ public class User
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
+    public string? PasswordResetToken { get; private set; }
+    public DateTime? ResetTokenExpires { get; private set; }
+
+
     // Navigation
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
 

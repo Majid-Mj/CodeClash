@@ -1,6 +1,7 @@
 using AspNet.Security.OAuth.GitHub;
 using CodeClash.API.Common;
 using CodeClash.API.Extensions;
+using CodeClash.Application.Features.Auth.Commands.ForgotPassword;
 using CodeClash.Application.Features.Auth.Commands.Login;
 using CodeClash.Application.Features.Auth.Commands.Logout;
 using CodeClash.Application.Features.Auth.Commands.RefreshToken;
@@ -135,6 +136,18 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data, result.Message));
     }
 
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequestDto dto,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ForgotPasswordCommand(dto), ct);
+        if (!result.IsSuccess)
+            return BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
+        return Ok(ApiResponse<string>.Ok(null, result.Message));
+    }
 
 
     /// <summary>

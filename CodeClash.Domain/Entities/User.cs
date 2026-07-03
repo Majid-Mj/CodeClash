@@ -21,6 +21,8 @@ public class User
     public DateTime? ResetTokenExpires { get; private set; }
     public string? PasswordResetOtp { get; private set; }
     public DateTime? ResetOtpExpires { get; private set; }
+    public int OtpFailedAttempts { get; private set; }
+    public DateTime? OtpLockedUntil { get; private set; }
 
 
     // Navigation
@@ -138,6 +140,8 @@ public class User
     {
         PasswordResetOtp = otp;
         ResetOtpExpires = expires;
+        OtpFailedAttempts = 0;
+        OtpLockedUntil = null;
         UpdatedAt = DateTime.UtcNow;
     }
 
@@ -145,6 +149,32 @@ public class User
     {
         PasswordResetOtp = null;
         ResetOtpExpires = null;
+        OtpFailedAttempts = 0;
+        OtpLockedUntil = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public bool IsOtpLocked()
+    {
+        return OtpLockedUntil.HasValue && OtpLockedUntil.Value > DateTime.UtcNow;
+    }
+
+    public void IncrementOtpFailedAttempts(int maxAttempts = 5, int lockoutMinutes = 15)
+    {
+        OtpFailedAttempts++;
+        if (OtpFailedAttempts >= maxAttempts)
+        {
+            OtpLockedUntil = DateTime.UtcNow.AddMinutes(lockoutMinutes);
+            PasswordResetOtp = null;
+            ResetOtpExpires = null;
+        }
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ResetOtpFailedAttempts()
+    {
+        OtpFailedAttempts = 0;
+        OtpLockedUntil = null;
         UpdatedAt = DateTime.UtcNow;
     }
 

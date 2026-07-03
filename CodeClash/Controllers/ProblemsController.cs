@@ -1,4 +1,4 @@
-﻿using CodeClash.API.Common;
+using CodeClash.API.Common;
 using CodeClash.API.Extensions;
 using CodeClash.Application.Features.Problems.Commands.CreateProblem;
 using CodeClash.Application.Features.Problems.Commands.DeleteProblem;
@@ -157,5 +157,22 @@ public class ProblemsController : ControllerBase
         }
 
         return Ok(ApiResponse<object>.Ok(null, result.Message));
+    }
+
+    // PUT /api/v1/problems/{problemId}/toggle-status    [Admin only]
+    [HttpPut("{problemId:guid}/toggle-status")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ToggleProblemStatus(Guid problemId, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new CodeClash.Application.Features.Problems.Commands.ToggleProblemStatus.ToggleProblemStatusCommand(problemId), ct);
+
+        if (!result.IsSuccess)
+        {
+            return NotFound(ApiResponse<bool>.Fail(result.Errors, result.Message));
+        }
+
+        return Ok(ApiResponse<bool>.Ok(result.Data, result.Message));
     }
 }

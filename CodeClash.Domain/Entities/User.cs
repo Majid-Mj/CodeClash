@@ -116,4 +116,20 @@ public class User
         GithubId = githubId;
         UpdatedAt = DateTime.UtcNow;
     }
+
+
+    public void SetPasswordResetToken(string token, DateTime expires)
+    {
+        PasswordResetToken = token;
+        ResetTokenExpires = expires;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ClearPasswordResetToken()
+    {
+        PasswordResetToken = null;
+        ResetTokenExpires = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
 }

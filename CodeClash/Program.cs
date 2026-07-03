@@ -247,11 +247,11 @@ await db.Database.MigrateAsync();
     // Seed Admin User
     var adminUsername = "Admin123";
     var adminEmail = "admin@codeclash.com";
-    var adminExists = await db.Users.AnyAsync(u => u.Username == adminUsername || u.Email == adminEmail);
-    if (!adminExists)
+    var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Username == adminUsername || u.Email == adminEmail);
+    if (adminUser == null)
     {
         var passwordHash = BCrypt.Net.BCrypt.HashPassword("Admin@1234", workFactor: 12);
-        var adminUser = CodeClash.Domain.Entities.User.Create(
+        adminUser = CodeClash.Domain.Entities.User.Create(
             "System Administrator",
             adminUsername,
             adminEmail,
@@ -260,6 +260,12 @@ await db.Database.MigrateAsync();
         adminUser.PromoteToAdmin();
 
         await db.Users.AddAsync(adminUser);
+        await db.SaveChangesAsync();
+    }
+    else if (adminUser.Role != CodeClash.Domain.Enums.UserRole.Admin)
+    {
+        adminUser.PromoteToAdmin();
+        db.Users.Update(adminUser);
         await db.SaveChangesAsync();
     }
 

@@ -44,6 +44,7 @@ public class LeaderboardController : ControllerBase
     {
         var users = await _context.Users
             .AsNoTracking()
+            .Where(u => u.Role != CodeClash.Domain.Enums.UserRole.Admin)
             .OrderBy(u => u.Username)
             .ToListAsync(ct);
 

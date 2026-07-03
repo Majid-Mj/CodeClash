@@ -17,6 +17,12 @@ public class User
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
+    public string? PasswordResetToken { get; private set; }
+    public DateTime? ResetTokenExpires { get; private set; }
+    public string? PasswordResetOtp { get; private set; }
+    public DateTime? ResetOtpExpires { get; private set; }
+
+
     // Navigation
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
 
@@ -112,4 +118,34 @@ public class User
         GithubId = githubId;
         UpdatedAt = DateTime.UtcNow;
     }
+
+
+    public void SetPasswordResetToken(string token, DateTime expires)
+    {
+        PasswordResetToken = token;
+        ResetTokenExpires = expires;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ClearPasswordResetToken()
+    {
+        PasswordResetToken = null;
+        ResetTokenExpires = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetPasswordResetOtp(string otp, DateTime expires)
+    {
+        PasswordResetOtp = otp;
+        ResetOtpExpires = expires;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ClearPasswordResetOtp()
+    {
+        PasswordResetOtp = null;
+        ResetOtpExpires = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
 }

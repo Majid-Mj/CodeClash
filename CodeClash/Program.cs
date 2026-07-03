@@ -246,21 +246,31 @@ var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 try
 {
     await db.Database.ExecuteSqlRawAsync(@"
-        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'PasswordResetOtp')
+        -- 1. If columns exist but migration is NOT in history, drop columns so migration can recreate them
+        IF NOT EXISTS (SELECT * FROM [__EFMigrationsHistory] WHERE [MigrationId] = '20260703065652_AddPasswordResetOtp')
         BEGIN
-            ALTER TABLE Users DROP COLUMN PasswordResetOtp;
+            IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'PasswordResetOtp')
+            BEGIN
+                ALTER TABLE Users DROP COLUMN PasswordResetOtp;
+            END
+            IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'PasswordResetToken')
+            BEGIN
+                ALTER TABLE Users DROP COLUMN PasswordResetToken;
+            END
+            IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'ResetOtpExpires')
+            BEGIN
+                ALTER TABLE Users DROP COLUMN ResetOtpExpires;
+            END
+            IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'ResetTokenExpires')
+            BEGIN
+                ALTER TABLE Users DROP COLUMN ResetTokenExpires;
+            END
         END
-        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'PasswordResetToken')
+
+        -- 2. If columns are missing but migration IS in history, delete history row so migration will run
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'PasswordResetOtp')
         BEGIN
-            ALTER TABLE Users DROP COLUMN PasswordResetToken;
-        END
-        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'ResetOtpExpires')
-        BEGIN
-            ALTER TABLE Users DROP COLUMN ResetOtpExpires;
-        END
-        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'ResetTokenExpires')
-        BEGIN
-            ALTER TABLE Users DROP COLUMN ResetTokenExpires;
+            DELETE FROM [__EFMigrationsHistory] WHERE [MigrationId] = '20260703065652_AddPasswordResetOtp';
         END
     ");
 }

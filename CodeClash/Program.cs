@@ -1,18 +1,19 @@
+using AspNet.Security.OAuth.GitHub;
 using CodeClash.API.Middleware;
 using CodeClash.Application;
 using CodeClash.Infrastructure;
 using CodeClash.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Threading.RateLimiting;
-using AspNet.Security.OAuth.GitHub;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -92,7 +93,7 @@ builder.Services.AddAuthentication(options =>
     options.ClientId = builder.Configuration["GitHub:ClientId"]!;
     options.ClientSecret = builder.Configuration["GitHub:ClientSecret"]!;
     options.Scope.Add("user:email");
-    options.CallbackPath = "/api/auth/github-callback";
+    options.CallbackPath = "/api/v1/auth/github-callback";
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     
     // Enforce secure cookie policies for Azure/reverse proxy compatibility
@@ -140,6 +141,13 @@ builder.Services.AddRateLimiter(options =>
     {
         opt.Window = TimeSpan.FromMinutes(15);
         opt.PermitLimit = 10;
+        opt.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("admin-write", opt =>
+    {
+        opt.Window = TimeSpan.FromHours(1);
+        opt.PermitLimit = 100;
         opt.QueueLimit = 0;
     });
 });
@@ -236,16 +244,14 @@ using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 await db.Database.MigrateAsync();
 
-if (app.Environment.IsDevelopment())
-{
     // Seed Admin User
     var adminUsername = "Admin123";
     var adminEmail = "admin@codeclash.com";
-    var adminExists = await db.Users.AnyAsync(u => u.Username == adminUsername || u.Email == adminEmail);
-    if (!adminExists)
+    var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Username == adminUsername || u.Email == adminEmail);
+    if (adminUser == null)
     {
         var passwordHash = BCrypt.Net.BCrypt.HashPassword("Admin@1234", workFactor: 12);
-        var adminUser = CodeClash.Domain.Entities.User.Create(
+        adminUser = CodeClash.Domain.Entities.User.Create(
             "System Administrator",
             adminUsername,
             adminEmail,
@@ -256,7 +262,12 @@ if (app.Environment.IsDevelopment())
         await db.Users.AddAsync(adminUser);
         await db.SaveChangesAsync();
     }
-}
+    else if (adminUser.Role != CodeClash.Domain.Enums.UserRole.Admin)
+    {
+        adminUser.PromoteToAdmin();
+        db.Users.Update(adminUser);
+        await db.SaveChangesAsync();
+    }
 
 // ── 8. Middleware pipeline ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
@@ -275,7 +286,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 app.UseCors("AllowAngular");
-app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

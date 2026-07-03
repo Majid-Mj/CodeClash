@@ -87,6 +87,36 @@ public class EmailService : IEmailService
         await SendAsync(toEmail, subject, htmlBody, ct);
     }
 
+    public async Task SendPasswordResetOtpAsync(
+        string toEmail,
+        string username,
+        string otp,
+        CancellationToken ct = default)
+    {
+        string subject = "Your Password Reset OTP - CodeClash";
+        string htmlBody = $"""
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:#1a1a2e;padding:30px;text-align:center;">
+                <h1 style="color:#e94560;margin:0;">CodeClash</h1>
+              </div>
+              <div style="background:#16213e;padding:30px;color:#e0e0e0;">
+                <h2>Hi {username},</h2>
+                <p>You requested to reset your password. Use the verification code below to complete the process:</p>
+                <div style="text-align:center;margin:30px 0;">
+                  <span style="background:#0f3460;color:#e94560;padding:15px 30px;
+                               font-size:32px;font-weight:bold;letter-spacing:6px;
+                               border-radius:8px;border:1px solid #e94560;display:inline-block;">
+                    {otp}
+                  </span>
+                </div>
+                <p style="font-size:13px;color:#aaa;">This code is valid for <strong>10 minutes</strong>. If you did not request a password reset, please ignore this email.</p>
+              </div>
+            </div>
+            """;
+
+        await SendAsync(toEmail, subject, htmlBody, ct);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     private async Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken ct)

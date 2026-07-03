@@ -1,10 +1,12 @@
 using AspNet.Security.OAuth.GitHub;
 using CodeClash.API.Common;
 using CodeClash.API.Extensions;
+using CodeClash.Application.Features.Auth.Commands.ForgotPassword;
 using CodeClash.Application.Features.Auth.Commands.Login;
 using CodeClash.Application.Features.Auth.Commands.Logout;
 using CodeClash.Application.Features.Auth.Commands.RefreshToken;
 using CodeClash.Application.Features.Auth.Commands.Register;
+using CodeClash.Application.Features.Auth.Commands.ResetPassword;
 using CodeClash.Application.Features.Auth.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
@@ -47,7 +49,6 @@ public class AuthController : ControllerBase
     /// <response code="500">Unexpected server error</response>
     [HttpPost("register")]
     [AllowAnonymous]
-    [EnableRateLimiting("register")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(
@@ -72,7 +73,6 @@ public class AuthController : ControllerBase
     /// <response code="401">Invalid credentials, unverified email, or banned account</response>
     [HttpPost("login")]
     [AllowAnonymous]
-    [EnableRateLimiting("login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -164,12 +164,23 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data, result.Message));
     }
 
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequestDto dto,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ForgotPasswordCommand(dto), ct);
+        if (!result.IsSuccess)
+            return BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
+        return Ok(ApiResponse<string>.Ok(null, result.Message));
+    }
+
     /// <summary>
     /// Auth Using GitHub
     /// </summary>
     /// <returns></returns>
-    [HttpGet("/api/auth/github-login")]
-    [HttpGet("/api/v1/auth/github-login")]
+    [HttpGet("github-login")]
     public IActionResult GitHubLogin()
     {
         var properties = new AuthenticationProperties
@@ -180,8 +191,7 @@ public class AuthController : ControllerBase
         return Challenge(properties, GitHubAuthenticationDefaults.AuthenticationScheme);
     }
 
-    [HttpGet("/api/auth/github-success")]
-    [HttpGet("/api/v1/auth/github-success")]
+    [HttpGet("github-success")]
     [AllowAnonymous]
     public async Task<IActionResult> GitHubSuccess(CancellationToken ct)
     {
@@ -257,6 +267,21 @@ public class AuthController : ControllerBase
 
         string frontendUrl = _config["App:FrontendUrl"] ?? "http://localhost:4200";
         return Redirect($"{frontendUrl}/auth-success?token={accessToken}&refreshToken={rawRefreshToken}");
+    }
+    // ─────────────────────────────────────────────────────────────
+    // POST /api/v1/auth/reset-password (Verify OTP & Reset)
+    // ─────────────────────────────────────────────────────────────
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequestDto dto,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ResetPasswordCommand(dto), ct);
+        if (!result.IsSuccess)
+            return BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
+
+        return Ok(ApiResponse<string>.Ok(null, result.Message));
     }
 
     private void AppendRefreshTokenCookie(string refreshToken)

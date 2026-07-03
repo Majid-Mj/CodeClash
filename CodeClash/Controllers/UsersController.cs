@@ -22,10 +22,12 @@ namespace CodeClash.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
+    private readonly IHubContext<NotificationHub> _hubContext;
 
-    public UsersController(IApplicationDbContext context)
+    public UsersController(IApplicationDbContext context, IHubContext<NotificationHub> hubContext)
     {
         _context = context;
+        _hubContext = hubContext;
     }
 
     public record UserManagementDto(
@@ -66,7 +68,7 @@ public class UsersController : ControllerBase
                 Elo: elo,
                 Role: user.Role.ToString(),
                 Status: user.IsActive ? "Active" : "Suspended",
-                JoinDate: user.CreatedAt.ToString("yyyy-MM-dd")
+                JoinDate: user.CreatedAt.ToString("MMM dd, yyyy")
             );
         }).ToArray();
 
@@ -103,6 +105,7 @@ public class UsersController : ControllerBase
         if (user.IsActive)
         {
             user.Deactivate();
+            await _hubContext.Clients.User(userId.ToString()).SendAsync("ForceLogout", ct);
         }
         else
         {

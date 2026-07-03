@@ -35,7 +35,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
 
         // 2 — Account guards
         if (!user.IsActive)
-            return Result<AuthResponseDto>.Failure("Your account has been suspended. Please contact support.");
+            return Result<AuthResponseDto>.Failure("the admin blocked the user please contect to admin");
 
         // 3 — Verify password
         bool passwordValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);

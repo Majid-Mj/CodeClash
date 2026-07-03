@@ -232,6 +232,12 @@ public class AuthController : ControllerBase
         }
 
         // 4. Generate standard JWT tokens
+        if (!user.IsActive)
+        {
+            string frontendUrlBlocked = (_config["App:FrontendUrl"] ?? "http://localhost:4200").TrimEnd('/');
+            return Redirect($"{frontendUrlBlocked}/login?error=blocked");
+        }
+
         string accessToken = _jwtService.GenerateAccessToken(user);
         string rawRefreshToken = _jwtService.GenerateRawRefreshToken();
         string hashedRefreshToken = _jwtService.HashToken(rawRefreshToken);

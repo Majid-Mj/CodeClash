@@ -12,3 +12,6 @@ obj/
 
 # Logs
 *.log
+
+# Local Configuration files
+**/appsettings.Development.json

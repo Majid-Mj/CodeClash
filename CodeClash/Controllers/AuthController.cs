@@ -155,7 +155,7 @@ public class AuthController : ControllerBase
     /// Auth Using GitHub
     /// </summary>
     /// <returns></returns>
-    [HttpGet("/api/auth/github-login")]
+    [HttpGet("github-login")]
     public IActionResult GitHubLogin()
     {
         var properties = new AuthenticationProperties
@@ -167,7 +167,7 @@ public class AuthController : ControllerBase
     }
 
 
-    [HttpGet("/api/auth/github-callback")]
+    [HttpGet("github-callback")]
     [AllowAnonymous]
     public async Task<IActionResult> GitHubCallback(CancellationToken ct)
     {

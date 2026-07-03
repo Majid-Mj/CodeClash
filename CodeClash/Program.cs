@@ -78,7 +78,7 @@ builder.Services.AddAuthentication(options =>
     options.ClientId = builder.Configuration["GitHub:ClientId"]!;
     options.ClientSecret = builder.Configuration["GitHub:ClientSecret"]!;
     options.Scope.Add("user:email");
-    options.CallbackPath = "/api/auth/github-callback";
+    options.CallbackPath = "/api/v1/auth/github-callback";
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 });
 

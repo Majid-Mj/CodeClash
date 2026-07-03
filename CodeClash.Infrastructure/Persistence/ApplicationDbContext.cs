@@ -18,6 +18,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Problem> Problems => Set<Problem>();
     public DbSet<TestCase> TestCases => Set<TestCase>();
 
+    // ── Notifications ──────────────────────────────────────────────────────────
+    public DbSet<Notification> Notifications => Set<Notification>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

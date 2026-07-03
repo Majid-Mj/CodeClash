@@ -11,5 +11,8 @@ public interface IApplicationDbContext
     // ── Problems (new) ────────────────────────────────────────────────────────
     DbSet<Problem> Problems { get; }
     DbSet<TestCase> TestCases { get; }
+    // ── Notifications ──────────────────────────────────────────────────────────
+    DbSet<Notification> Notifications { get; }
+    
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

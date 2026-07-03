@@ -1,4 +1,6 @@
 using AspNet.Security.OAuth.GitHub;
+using CodeClash.API.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using CodeClash.API.Middleware;
 using CodeClash.Application;
 using CodeClash.Infrastructure;
@@ -60,6 +62,16 @@ builder.Services.AddAuthentication(options =>
 
     options.Events = new JwtBearerEvents
     {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        },
         OnChallenge = async context =>
         {
             context.HandleResponse();
@@ -110,6 +122,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
     options.AddPolicy("UserOrAdmin", policy => policy.RequireRole("User", "Admin"));
 });
+
+// SignalR services & Custom Authentication Provider mapping
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 
 // ── 3. Rate Limiting ──────────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
@@ -352,5 +368,6 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

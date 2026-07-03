@@ -41,7 +41,7 @@ public class ExceptionHandlingMiddleware
         {
             _logger.LogError(ex, "Unhandled exception occurred");
             await WriteResponse(context, HttpStatusCode.InternalServerError,
-                ApiResponse<object>.Fail("An unexpected error occurred. Please try again later.", "Internal server error"));
+                ApiResponse<object>.Fail("An unexpected error occurred. Please try again later."));
         }
     }
 

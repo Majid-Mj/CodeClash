@@ -31,7 +31,8 @@ public class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, Result<Pr
             FullName: user.FullName,
             PhoneNumber: user.PhoneNumber,
             ProfileImageUrl: user.ProfileImageUrl,
-            CreatedAt: user.CreatedAt
+            CreatedAt: user.CreatedAt,
+            Role: user.Role.ToString()
         );
 
         return Result<ProfileDto>.Success(dto, "Profile retrieved successfully.");

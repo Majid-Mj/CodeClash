@@ -9,5 +9,6 @@ public record ProfileDto(
     string FullName,
     string? PhoneNumber,
     string? ProfileImageUrl,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string Role
 );

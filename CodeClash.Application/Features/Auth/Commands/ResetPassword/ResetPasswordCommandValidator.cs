@@ -22,9 +22,5 @@ public class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordComm
             .Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter.")
             .Matches(@"\d").WithMessage("Password must contain at least one digit.")
             .Matches(@"[!@#$%^&*(),.?""':;{}|<>\[\]\\\/`~_\-+=]").WithMessage("Password must contain at least one special character.");
-
-        RuleFor(x => x.Dto.ConfirmPassword)
-            .NotEmpty().WithMessage("Confirm password is required.")
-            .Equal(x => x.Dto.NewPassword).WithMessage("Passwords must match.");
     }
 }

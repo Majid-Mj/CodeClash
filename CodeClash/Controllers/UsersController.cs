@@ -140,11 +140,9 @@ public class UsersController : ControllerBase
 
         if (dto.UserId.HasValue)
         {
-            var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == dto.UserId.Value, ct);
-            if (user == null)
-            {
-                return NotFound(ApiResponse<object>.Fail("Recipient user not found.", "UserNotFound"));
-            }
+            var notif = new Notification(dto.UserId.Value, dto.Title.Trim(), dto.Message.Trim(), type);
+            _context.Notifications.Add(notif);
+            await _context.SaveChangesAsync(ct);
 
             await hubContext.Clients.User(dto.UserId.Value.ToString()).SendAsync("ReceiveNotification", new
             {
@@ -155,6 +153,13 @@ public class UsersController : ControllerBase
         }
         else
         {
+            // For global notifications, we will broadcast via SignalR. 
+            // We'll also fetch all user IDs and persist a notification for each so it stays in their history.
+            var allUserIds = await _context.Users.Select(u => u.Id).ToListAsync(ct);
+            var notifications = allUserIds.Select(id => new Notification(id, dto.Title.Trim(), dto.Message.Trim(), type));
+            _context.Notifications.AddRange(notifications);
+            await _context.SaveChangesAsync(ct);
+
             await hubContext.Clients.All.SendAsync("ReceiveNotification", new
             {
                 title = dto.Title.Trim(),

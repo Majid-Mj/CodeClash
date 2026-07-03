@@ -47,7 +47,6 @@ public class AuthController : ControllerBase
     /// <response code="500">Unexpected server error</response>
     [HttpPost("register")]
     [AllowAnonymous]
-    [EnableRateLimiting("register")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(
@@ -72,7 +71,6 @@ public class AuthController : ControllerBase
     /// <response code="401">Invalid credentials, unverified email, or banned account</response>
     [HttpPost("login")]
     [AllowAnonymous]
-    [EnableRateLimiting("login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]

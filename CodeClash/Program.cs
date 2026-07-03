@@ -227,8 +227,33 @@ builder.Services.AddSwaggerGen(options =>
         options.IncludeXmlComments(xmlPath);
 });
 
+// ── Rate Limiting for OTP/Auth endpoints ──────────────────────────────────────
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddFixedWindowLimiter("otp", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 3;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 0;
+    });
+});
+
 // ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
+
+// ── SMTP Configuration Validation ─────────────────────────────────────────────
+var smtpSection = app.Configuration.GetSection("SmtpSettings");
+var smtpUsername = smtpSection["Username"];
+var smtpPassword = smtpSection["Password"];
+if (string.IsNullOrEmpty(smtpUsername) || smtpUsername.Contains("your-email") ||
+    string.IsNullOrEmpty(smtpPassword) || smtpPassword.Contains("your-app-password"))
+{
+    app.Logger.LogWarning("⚠️  SMTP credentials are not configured. Email features (OTP, verification) will fail at runtime. " +
+        "Set SmtpSettings__Username and SmtpSettings__Password environment variables.");
+}
 
 // Configure Forwarded Headers for Azure App Service/SSL termination
 var forwardedOptions = new ForwardedHeadersOptions
@@ -323,6 +348,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 app.UseCors("AllowAngular");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

@@ -38,13 +38,8 @@ public class AuthController : ControllerBase
     }
     //Checks
 
-    // ─────────────────────────────────────────────────────────────
     // POST /api/v1/auth/register
-    // ─────────────────────────────────────────────────────────────
-    /// <summary>Creates a new user account and sends a verification email.</summary>
-    /// <response code="201">Account created — verification email sent</response>
-    /// <response code="400">Validation error or email/username already exists</response>
-    /// <response code="500">Unexpected server error</response>
+
     [HttpPost("register")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status201Created)]
@@ -62,13 +57,8 @@ public class AuthController : ControllerBase
             ApiResponse<string>.Ok(result.Data, result.Message));
     }
 
-    // ─────────────────────────────────────────────────────────────
     // POST /api/v1/auth/login
-    // ─────────────────────────────────────────────────────────────
-    /// <summary>Authenticates a user and returns JWT access + refresh tokens.</summary>
-    /// <response code="200">Login successful — tokens returned</response>
-    /// <response code="400">Validation error</response>
-    /// <response code="401">Invalid credentials, unverified email, or banned account</response>
+
     [HttpPost("login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
@@ -92,13 +82,8 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data, result.Message));
     }
 
-    // ─────────────────────────────────────────────────────────────
     // POST /api/v1/auth/logout
-    // ─────────────────────────────────────────────────────────────
-    /// <summary>Revokes the current (or all) session refresh token(s).</summary>
-    /// <response code="200">Logged out successfully</response>
-    /// <response code="400">Missing refresh token</response>
-    /// <response code="401">Invalid or expired access token</response>
+
     [HttpPost("logout")]
     [Authorize]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -131,12 +116,8 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<object>.Ok(null, result.Message));
     }
 
-    // ─────────────────────────────────────────────────────────────
     // POST /api/v1/auth/refresh
-    // ─────────────────────────────────────────────────────────────
-    /// <summary>Refreshes the access token using a valid refresh token.</summary>
-    /// <response code="200">Token refreshed successfully</response>
-    /// <response code="400">Invalid or expired refresh token</response>
+
     [HttpPost("refresh")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
@@ -162,10 +143,6 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data, result.Message));
     }
 
-    /// <summary>
-    /// Auth Using GitHub
-    /// </summary>
-    /// <returns></returns>
     [HttpGet("/api/auth/github-login")]
     [HttpGet("/api/v1/auth/github-login")]
     public IActionResult GitHubLogin()

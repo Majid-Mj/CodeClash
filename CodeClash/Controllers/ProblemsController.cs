@@ -25,16 +25,9 @@ public class ProblemsController : ControllerBase
         _mediator = mediator;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // GET /api/v1/problems
     // Public for Users (active problems only), Admin sees all including inactive
-    // ─────────────────────────────────────────────────────────────────────────
-    /// <summary>
-    /// Returns a paginated, filterable list of problems.
-    /// Users see active problems only. Admins see all including inactive.
-    /// </summary>
-    /// <response code="200">List returned successfully</response>
-    /// <response code="400">Invalid filter or pagination parameters</response>
+
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -64,17 +57,8 @@ public class ProblemsController : ControllerBase
         return Ok(ApiResponse<object>.Ok(result.Data, result.Message));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // GET /api/v1/problems/{problemId}
-    // ─────────────────────────────────────────────────────────────────────────
-    /// <summary>
-    /// Returns full problem detail.
-    /// Users receive redacted hidden test cases (IsHidden=true items have null Input/ExpectedOutput).
-    /// Admins receive the full payload including all hidden test case data.
-    /// </summary>
-    /// <response code="200">Problem returned successfully</response>
-    /// <response code="400">Invalid problem ID format</response>
-    /// <response code="404">Problem not found or inactive</response>
+    
     [HttpGet("{problemId:guid}")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<ProblemDetailDto>), StatusCodes.Status200OK)]
@@ -95,17 +79,8 @@ public class ProblemsController : ControllerBase
         return Ok(ApiResponse<ProblemDetailDto>.Ok(result.Data, result.Message));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // POST /api/v1/problems          [Admin only]
-    // ─────────────────────────────────────────────────────────────────────────
-    /// <summary>
-    /// Creates a new problem. Problem is set to inactive by default and must be
-    /// explicitly activated via the Update endpoint (IsActive: true).
-    /// </summary>
-    /// <response code="201">Problem created — returns new problem ID</response>
-    /// <response code="400">Validation failed or duplicate title</response>
-    /// <response code="401">Missing or invalid JWT</response>
-    /// <response code="403">Caller does not have the Admin role</response>
+
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting("admin-write")]
@@ -128,19 +103,8 @@ public class ProblemsController : ControllerBase
             ApiResponse<Guid>.Ok(result.Data, result.Message));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // PUT /api/v1/problems/{problemId}    [Admin only]
-    // ─────────────────────────────────────────────────────────────────────────
-    /// <summary>
-    /// Full replace update of an existing problem.
-    /// Pass IsActive: true to publish, false to unpublish.
-    /// All test cases are replaced — re-send the full test case list each time.
-    /// </summary>
-    /// <response code="200">Problem updated</response>
-    /// <response code="400">Validation failed or duplicate title</response>
-    /// <response code="401">Missing or invalid JWT</response>
-    /// <response code="403">Caller does not have the Admin role</response>
-    /// <response code="404">Problem not found</response>
+
     [HttpPut("{problemId:guid}")]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting("admin-write")]
@@ -169,18 +133,9 @@ public class ProblemsController : ControllerBase
         return Ok(ApiResponse<Guid>.Ok(result.Data, result.Message));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // DELETE /api/v1/problems/{problemId}    [Admin only]
-    // ─────────────────────────────────────────────────────────────────────────
-    /// <summary>
-    /// Soft-deletes a problem. The record is retained for historical
-    /// match/submission data integrity. Deleted problems do not appear in any list.
-    /// </summary>
-    /// <response code="200">Problem deleted</response>
-    /// <response code="400">Problem is used in an active battle</response>
-    /// <response code="401">Missing or invalid JWT</response>
-    /// <response code="403">Caller does not have the Admin role</response>
-    /// <response code="404">Problem not found</response>
+  
+
     [HttpDelete("{problemId:guid}")]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]

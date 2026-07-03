@@ -5,6 +5,8 @@ using CodeClash.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using CodeClash.API.Hubs;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -110,4 +112,64 @@ public class UsersController : ControllerBase
         await _context.SaveChangesAsync(ct);
         return Ok(ApiResponse<object>.Ok(null, $"User {user.Username} status updated to {(user.IsActive ? "Active" : "Suspended")} successfully."));
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // POST /api/v1/admin/users/notify
+    // ─────────────────────────────────────────────────────────────
+    /// <summary>Sends a real-time SignalR notification to a specific user, or broadcasts to all users if UserId is empty.</summary>
+    /// <response code="200">Notification sent successfully</response>
+    /// <response code="400">Missing fields or validation error</response>
+    /// <response code="401">Unauthorized</response>
+    /// <response code="403">Forbidden (Admins only)</response>
+    /// <response code="404">Recipient user not found</response>
+    [HttpPost("notify")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SendNotification(
+        [FromBody] SendNotificationDto dto,
+        [FromServices] IHubContext<NotificationHub> hubContext,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.Message))
+        {
+            return BadRequest(ApiResponse<object>.Fail("Title and Message are required.", "ValidationFailed"));
+        }
+
+        string type = dto.Type?.ToLower() ?? "info";
+
+        if (dto.UserId.HasValue)
+        {
+            var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == dto.UserId.Value, ct);
+            if (user == null)
+            {
+                return NotFound(ApiResponse<object>.Fail("Recipient user not found.", "UserNotFound"));
+            }
+
+            await hubContext.Clients.User(dto.UserId.Value.ToString()).SendAsync("ReceiveNotification", new
+            {
+                title = dto.Title.Trim(),
+                message = dto.Message.Trim(),
+                type = type
+            });
+        }
+        else
+        {
+            await hubContext.Clients.All.SendAsync("ReceiveNotification", new
+            {
+                title = dto.Title.Trim(),
+                message = dto.Message.Trim(),
+                type = type
+            });
+        }
+
+        return Ok(ApiResponse<object>.Ok(null, "System notification pushed successfully."));
+    }
 }
+
+public record SendNotificationDto(
+    Guid? UserId,
+    string Title,
+    string Message,
+    string? Type
+);

@@ -6,6 +6,7 @@ using CodeClash.Application.Features.Auth.Commands.Login;
 using CodeClash.Application.Features.Auth.Commands.Logout;
 using CodeClash.Application.Features.Auth.Commands.RefreshToken;
 using CodeClash.Application.Features.Auth.Commands.Register;
+using CodeClash.Application.Features.Auth.Commands.ResetPassword;
 using CodeClash.Application.Features.Auth.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
@@ -241,6 +242,20 @@ public class AuthController : ControllerBase
         string frontendUrl = _config["App:FrontendUrl"] ?? "http://localhost:4200";
         return Redirect($"{frontendUrl}/auth-success?token={accessToken}&refreshToken={rawRefreshToken}");
     }
+    // ─────────────────────────────────────────────────────────────
+    // POST /api/v1/auth/reset-password (Verify OTP & Reset)
+    // ─────────────────────────────────────────────────────────────
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequestDto dto,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ResetPasswordCommand(dto), ct);
+        if (!result.IsSuccess)
+            return BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
 
+        return Ok(ApiResponse<string>.Ok(null, result.Message));
+    }
 
 }

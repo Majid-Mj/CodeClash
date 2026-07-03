@@ -19,6 +19,8 @@ public class User
 
     public string? PasswordResetToken { get; private set; }
     public DateTime? ResetTokenExpires { get; private set; }
+    public string? PasswordResetOtp { get; private set; }
+    public DateTime? ResetOtpExpires { get; private set; }
 
 
     // Navigation
@@ -129,6 +131,20 @@ public class User
     {
         PasswordResetToken = null;
         ResetTokenExpires = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetPasswordResetOtp(string otp, DateTime expires)
+    {
+        PasswordResetOtp = otp;
+        ResetOtpExpires = expires;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ClearPasswordResetOtp()
+    {
+        PasswordResetOtp = null;
+        ResetOtpExpires = null;
         UpdatedAt = DateTime.UtcNow;
     }
 

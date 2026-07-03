@@ -242,6 +242,33 @@ app.UseForwardedHeaders(forwardedOptions);
 // ── 7. Auto-migrate on startup (ensures Azure DB is migrated) ─────────────────
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+try
+{
+    await db.Database.ExecuteSqlRawAsync(@"
+        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'PasswordResetOtp')
+        BEGIN
+            ALTER TABLE Users DROP COLUMN PasswordResetOtp;
+        END
+        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'PasswordResetToken')
+        BEGIN
+            ALTER TABLE Users DROP COLUMN PasswordResetToken;
+        END
+        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'ResetOtpExpires')
+        BEGIN
+            ALTER TABLE Users DROP COLUMN ResetOtpExpires;
+        END
+        IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'ResetTokenExpires')
+        BEGIN
+            ALTER TABLE Users DROP COLUMN ResetTokenExpires;
+        END
+    ");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Database self-healing cleanup skipped: {ex.Message}");
+}
+
 await db.Database.MigrateAsync();
 
     // Seed Admin User

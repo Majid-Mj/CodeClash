@@ -246,7 +246,7 @@ public class AuthController : ControllerBase
         // 6. Redirect to Angular Application
         AppendRefreshTokenCookie(rawRefreshToken);
 
-        string frontendUrl = _config["App:FrontendUrl"] ?? "http://localhost:4200";
+        string frontendUrl = (_config["App:FrontendUrl"] ?? "http://localhost:4200").TrimEnd('/');
         return Redirect($"{frontendUrl}/auth-success?token={accessToken}&refreshToken={rawRefreshToken}");
     }
     // ─────────────────────────────────────────────────────────────

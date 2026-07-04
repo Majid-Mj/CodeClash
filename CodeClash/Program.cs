@@ -38,7 +38,7 @@ var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"]
     ?? throw new InvalidOperationException("JwtSettings:SecretKey is not configured.");
 
-builder.Services.AddAuthentication(options =>
+var authBuilder = builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -96,22 +96,27 @@ builder.Services.AddAuthentication(options =>
         }
     };
 })
-.AddCookie()
-.AddGitHub(options =>
+.AddCookie();
+
+if (!string.IsNullOrEmpty(builder.Configuration["GitHub:ClientId"]) &&
+    !string.IsNullOrEmpty(builder.Configuration["GitHub:ClientSecret"]))
 {
-    options.ClientId = builder.Configuration["GitHub:ClientId"]!;
-    options.ClientSecret = builder.Configuration["GitHub:ClientSecret"]!;
-    options.Scope.Add("user:email");
-    options.CallbackPath = "/api/v1/auth/github-callback";
-    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    
-    // Enforce secure cookie policies for Azure/reverse proxy compatibility
-    options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.CorrelationCookie.SameSite = SameSiteMode.Lax;
-    options.CorrelationCookie.HttpOnly = true;
-    options.CorrelationCookie.Path = "/";
-    options.CorrelationCookie.IsEssential = true;
-});
+    authBuilder.AddGitHub(options =>
+    {
+        options.ClientId = builder.Configuration["GitHub:ClientId"]!;
+        options.ClientSecret = builder.Configuration["GitHub:ClientSecret"]!;
+        options.Scope.Add("user:email");
+        options.CallbackPath = "/api/v1/auth/github-callback";
+        options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        
+        // Enforce secure cookie policies for Azure/reverse proxy compatibility
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.CorrelationCookie.HttpOnly = true;
+        options.CorrelationCookie.Path = "/";
+        options.CorrelationCookie.IsEssential = true;
+    });
+}
 
 
 builder.Services.AddAuthorization(options =>

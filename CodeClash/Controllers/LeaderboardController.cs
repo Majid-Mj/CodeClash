@@ -33,6 +33,7 @@ public class LeaderboardController : ControllerBase
 
     // GET /api/v1/leaderboard
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(LeaderboardUserDto[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLeaderboard(CancellationToken ct)
     {

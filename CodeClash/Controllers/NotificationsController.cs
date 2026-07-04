@@ -1,4 +1,3 @@
-using CodeClash.API.Common;
 using CodeClash.Application.Common.Interfaces;
 using CodeClash.Domain.Entities;
 using CodeClash.API.Extensions;
@@ -35,9 +34,8 @@ public class NotificationsController : ControllerBase
         DateTime Time
     );
 
-    /// <summary>Returns the current user's notifications history.</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<NotificationDto[]>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(NotificationDto[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyNotifications(CancellationToken ct)
     {
         var userId = User.GetUserId();
@@ -58,13 +56,12 @@ public class NotificationsController : ControllerBase
             n.CreatedAt
         )).ToArray();
 
-        return Ok(ApiResponse<NotificationDto[]>.Ok(dtos, "Notifications retrieved."));
+        return Ok(dtos);
     }
 
-    /// <summary>Marks a specific notification as read.</summary>
     [HttpPut("{id:guid}/read")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> MarkAsRead(Guid id, CancellationToken ct)
     {
         var userId = User.GetUserId();
@@ -73,17 +70,16 @@ public class NotificationsController : ControllerBase
             .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId, ct);
 
         if (notification == null)
-            return NotFound(ApiResponse<object>.Fail("Notification not found."));
+            return NotFound(new { message = "Notification not found." });
 
         notification.MarkAsRead();
         await _context.SaveChangesAsync(ct);
 
-        return Ok(ApiResponse<object>.Ok(null, "Marked as read."));
+        return Ok(new { message = "Marked as read." });
     }
 
-    /// <summary>Marks all notifications as read.</summary>
     [HttpPut("read-all")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> MarkAllAsRead(CancellationToken ct)
     {
         var userId = User.GetUserId();
@@ -102,6 +98,6 @@ public class NotificationsController : ControllerBase
             await _context.SaveChangesAsync(ct);
         }
 
-        return Ok(ApiResponse<object>.Ok(null, "All marked as read."));
+        return Ok(new { message = "All marked as read." });
     }
 }

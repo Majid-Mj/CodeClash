@@ -1,13 +1,18 @@
-using CodeClash.API.Common;
 using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace CodeClash.API.Middleware;
 
 /// <summary>
 /// Global exception handler — catches FluentValidation.ValidationException
-/// and all unhandled exceptions, returning a consistent ApiResponse envelope.
+/// and all unhandled exceptions, returning standard ProblemDetails.
 /// </summary>
 public class ExceptionHandlingMiddleware
 {
@@ -29,25 +34,41 @@ public class ExceptionHandlingMiddleware
         catch (ValidationException ex)
         {
             var errors = ex.Errors.Select(e => e.ErrorMessage).Distinct().ToList();
-            await WriteResponse(context, HttpStatusCode.BadRequest,
-                ApiResponse<object>.Fail(errors, "Validation failed"));
+            var problem = new ProblemDetails
+            {
+                Status = (int)HttpStatusCode.BadRequest,
+                Title = "Validation failed",
+                Detail = "One or more validation errors occurred."
+            };
+            problem.Extensions["errors"] = errors;
+            await WriteResponse(context, HttpStatusCode.BadRequest, problem);
         }
         catch (UnauthorizedAccessException ex)
         {
-            await WriteResponse(context, HttpStatusCode.Unauthorized,
-                ApiResponse<object>.Fail(ex.Message, "Unauthorized"));
+            var problem = new ProblemDetails
+            {
+                Status = (int)HttpStatusCode.Unauthorized,
+                Title = "Unauthorized",
+                Detail = ex.Message
+            };
+            await WriteResponse(context, HttpStatusCode.Unauthorized, problem);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception occurred");
-            await WriteResponse(context, HttpStatusCode.InternalServerError,
-                ApiResponse<object>.Fail("An unexpected error occurred. Please try again later."));
+            var problem = new ProblemDetails
+            {
+                Status = (int)HttpStatusCode.InternalServerError,
+                Title = "Internal Server Error",
+                Detail = "An unexpected error occurred. Please try again later."
+            };
+            await WriteResponse(context, HttpStatusCode.InternalServerError, problem);
         }
     }
 
-    private static async Task WriteResponse<T>(HttpContext context, HttpStatusCode statusCode, ApiResponse<T> response)
+    private static async Task WriteResponse(HttpContext context, HttpStatusCode statusCode, ProblemDetails response)
     {
-        context.Response.ContentType = "application/json";
+        context.Response.ContentType = "application/problem+json";
         context.Response.StatusCode = (int)statusCode;
 
         var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };

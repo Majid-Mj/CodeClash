@@ -1,5 +1,4 @@
 using AspNet.Security.OAuth.GitHub;
-using CodeClash.API.Common;
 using CodeClash.API.Extensions;
 using CodeClash.Application.Features.Auth.Commands.ForgotPassword;
 using CodeClash.Application.Features.Auth.Commands.Login;
@@ -14,6 +13,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CodeClash.API.Controllers;
 
@@ -38,14 +41,12 @@ public class AuthController : ControllerBase
         _jwtService = jwtService;
         _config = config;
     }
-    //Checks
 
     // POST /api/v1/auth/register
-
     [HttpPost("register")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterRequestDto dto,
         CancellationToken ct)
@@ -53,19 +54,17 @@ public class AuthController : ControllerBase
         var result = await _mediator.Send(new RegisterCommand(dto), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
+            return BadRequest(new { message = result.Message, errors = result.Errors });
 
-        return StatusCode(StatusCodes.Status201Created,
-            ApiResponse<string>.Ok(result.Data, result.Message));
+        return StatusCode(StatusCodes.Status201Created, new { message = result.Message, data = result.Data });
     }
 
     // POST /api/v1/auth/login
-
     [HttpPost("login")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login(
         [FromBody] LoginRequestDto dto,
         CancellationToken ct)
@@ -74,23 +73,22 @@ public class AuthController : ControllerBase
         var result = await _mediator.Send(new LoginCommand(dto, deviceInfo), ct);
 
         if (!result.IsSuccess)
-            return Unauthorized(ApiResponse<AuthResponseDto>.Fail(result.Errors, result.Message));
+            return Unauthorized(new { message = result.Message, errors = result.Errors });
 
         if (result.Data != null)
         {
             AppendRefreshTokenCookie(result.Data.RefreshToken);
         }
 
-        return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data, result.Message));
+        return Ok(result.Data);
     }
 
     // POST /api/v1/auth/logout
-
     [HttpPost("logout")]
     [Authorize]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout(
         [FromBody] LogoutRequestDto dto,
         CancellationToken ct)
@@ -106,7 +104,7 @@ public class AuthController : ControllerBase
         var result = await _mediator.Send(new LogoutCommand(cmdDto, userId), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(ApiResponse<object>.Fail(result.Errors, result.Message));
+            return BadRequest(new { message = result.Message, errors = result.Errors });
 
         Response.Cookies.Delete("refreshToken", new CookieOptions
         {
@@ -115,34 +113,33 @@ public class AuthController : ControllerBase
             SameSite = SameSiteMode.None
         });
 
-        return Ok(ApiResponse<object>.Ok(null, result.Message));
+        return Ok(new { message = result.Message });
     }
 
     // POST /api/v1/auth/refresh
-
     [HttpPost("refresh")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Refresh(CancellationToken ct)
     {
         if (!Request.Cookies.TryGetValue("refreshToken", out string? refreshToken) || string.IsNullOrEmpty(refreshToken))
         {
-            return BadRequest(ApiResponse<AuthResponseDto>.Fail("Refresh token is missing from cookies."));
+            return BadRequest(new { message = "Refresh token is missing from cookies." });
         }
 
         var dto = new RefreshTokenRequestDto(refreshToken);
         var result = await _mediator.Send(new RefreshTokenCommand(dto), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(ApiResponse<AuthResponseDto>.Fail(result.Errors, result.Message));
+            return BadRequest(new { message = result.Message, errors = result.Errors });
 
         if (result.Data != null)
         {
             AppendRefreshTokenCookie(result.Data.RefreshToken);
         }
 
-        return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data, result.Message));
+        return Ok(result.Data);
     }
 
     [HttpPost("forgot-password")]
@@ -154,14 +151,10 @@ public class AuthController : ControllerBase
     {
         var result = await _mediator.Send(new ForgotPasswordCommand(dto), ct);
         if (!result.IsSuccess)
-            return BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
-        return Ok(ApiResponse<string>.Ok(null, result.Message));
+            return BadRequest(new { message = result.Message, errors = result.Errors });
+        return Ok(new { message = result.Message });
     }
 
-    /// <summary>
-    /// Auth Using GitHub
-    /// </summary>
-    /// <returns></returns>
     [HttpGet("github-login")]
     public IActionResult GitHubLogin()
     {
@@ -181,7 +174,7 @@ public class AuthController : ControllerBase
         var result = await HttpContext.AuthenticateAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
         if (!result.Succeeded || result.Principal == null)
         {
-            return BadRequest(ApiResponse<object>.Fail("GitHub authentication failed or was cancelled.", "OAuthError"));
+            return BadRequest(new { message = "GitHub authentication failed or was cancelled.", title = "OAuthError" });
         }
 
         // 2. Extract Claims
@@ -196,7 +189,7 @@ public class AuthController : ControllerBase
 
         if (string.IsNullOrEmpty(email))
         {
-            return BadRequest(ApiResponse<object>.Fail("Could not retrieve email from GitHub profile.", "OAuthError"));
+            return BadRequest(new { message = "Could not retrieve email from GitHub profile.", title = "OAuthError" });
         }
 
         // 3. User Upsert (Lookup by email, or create new)
@@ -256,9 +249,8 @@ public class AuthController : ControllerBase
         string frontendUrl = (_config["App:FrontendUrl"] ?? "http://localhost:4200").TrimEnd('/');
         return Redirect($"{frontendUrl}/auth-success?token={accessToken}&refreshToken={rawRefreshToken}");
     }
-    // ─────────────────────────────────────────────────────────────
+
     // POST /api/v1/auth/reset-password (Verify OTP & Reset)
-    // ─────────────────────────────────────────────────────────────
     [HttpPost("reset-password")]
     [AllowAnonymous]
     [EnableRateLimiting("otp")]
@@ -268,9 +260,9 @@ public class AuthController : ControllerBase
     {
         var result = await _mediator.Send(new ResetPasswordCommand(dto), ct);
         if (!result.IsSuccess)
-            return BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
+            return BadRequest(new { message = result.Message, errors = result.Errors });
 
-        return Ok(ApiResponse<string>.Ok(null, result.Message));
+        return Ok(new { message = result.Message });
     }
 
     private void AppendRefreshTokenCookie(string refreshToken)

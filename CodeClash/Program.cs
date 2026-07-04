@@ -19,11 +19,9 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── 1. Clean Architecture layers ─────────────────────────────────────────────
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// ── Data Protection Key Persistence ───────────────────────────────────────────
 var homePath = Environment.GetEnvironmentVariable("HOME");
 var dpFolder = !string.IsNullOrEmpty(homePath)
     ? Path.Combine(homePath, "ASP.NET", "DataProtection-Keys")
@@ -36,7 +34,6 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpFolder))
     .SetApplicationName("CodeClash");
 
-// ── 2. JWT Authentication ─────────────────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"]
     ?? throw new InvalidOperationException("JwtSettings:SecretKey is not configured.");
@@ -78,7 +75,7 @@ builder.Services.AddAuthentication(options =>
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             context.Response.ContentType = "application/json";
 
-            var response = CodeClash.API.Common.ApiResponse<object>.Fail("You are not authorized to access this resource.", "Unauthorized");
+            var response = new { message = "You are not authorized to access this resource.", title = "Unauthorized" };
             var json = System.Text.Json.JsonSerializer.Serialize(response, new System.Text.Json.JsonSerializerOptions
             {
                 PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
@@ -90,7 +87,7 @@ builder.Services.AddAuthentication(options =>
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";
 
-            var response = CodeClash.API.Common.ApiResponse<object>.Fail("You do not have permission to access this resource.", "Forbidden");
+            var response = new { message = "You do not have permission to access this resource.", title = "Forbidden" };
             var json = System.Text.Json.JsonSerializer.Serialize(response, new System.Text.Json.JsonSerializerOptions
             {
                 PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
@@ -127,7 +124,6 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 
-// ── 3. Rate Limiting ──────────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -137,7 +133,7 @@ builder.Services.AddRateLimiter(options =>
         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         context.HttpContext.Response.ContentType = "application/json";
 
-        var response = CodeClash.API.Common.ApiResponse<object>.Fail("Too many requests. Please try again later.", "Rate limit exceeded");
+        var response = new { message = "Too many requests. Please try again later.", title = "Rate limit exceeded" };
         var json = System.Text.Json.JsonSerializer.Serialize(response, new System.Text.Json.JsonSerializerOptions
         {
             PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
@@ -168,7 +164,6 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// ── 4. CORS (Angular dev server) ──────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
@@ -178,7 +173,6 @@ builder.Services.AddCors(options =>
         .AllowCredentials());
 });
 
-// ── 5. Controllers & JSON ─────────────────────────────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -195,12 +189,11 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
             .Select(e => e.ErrorMessage)
             .ToList();
 
-        var response = CodeClash.API.Common.ApiResponse<object>.Fail(errors, "Validation failed");
+        var response = new { message = "Validation failed", errors = errors };
         return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(response);
     };
 });
 
-// ── 6. Swagger / OpenAPI ──────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -208,7 +201,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "CodeClash API",
         Version = "v1",
-        Description = "Real-Time Coding Battle Platform — Authentication Endpoints"
+        Description = "Real-Time Coding Battle Platform â€” Authentication Endpoints"
     });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -243,7 +236,6 @@ builder.Services.AddSwaggerGen(options =>
         options.IncludeXmlComments(xmlPath);
 });
 
-// ── Rate Limiting for OTP/Auth endpoints ──────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -257,17 +249,15 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// ── SMTP Configuration Validation ─────────────────────────────────────────────
 var smtpSection = app.Configuration.GetSection("SmtpSettings");
 var smtpUsername = smtpSection["Username"];
 var smtpPassword = smtpSection["Password"];
 if (string.IsNullOrEmpty(smtpUsername) || smtpUsername.Contains("your-email") ||
     string.IsNullOrEmpty(smtpPassword) || smtpPassword.Contains("your-app-password"))
 {
-    app.Logger.LogWarning("⚠️  SMTP credentials are not configured. Email features (OTP, verification) will fail at runtime. " +
+    app.Logger.LogWarning("âš ï¸  SMTP credentials are not configured. Email features (OTP, verification) will fail at runtime. " +
         "Set SmtpSettings__Username and SmtpSettings__Password environment variables.");
 }
 
@@ -280,7 +270,6 @@ forwardedOptions.KnownNetworks.Clear();
 forwardedOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedOptions);
 
-// ── 7. Auto-migrate on startup (ensures Azure DB is migrated) ─────────────────
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -347,7 +336,6 @@ await db.Database.MigrateAsync();
         await db.SaveChangesAsync();
     }
 
-// ── 8. Middleware pipeline ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseStaticFiles();
 

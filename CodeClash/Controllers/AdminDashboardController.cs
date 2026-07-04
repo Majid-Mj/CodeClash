@@ -1,4 +1,3 @@
-using CodeClash.API.Common;
 using CodeClash.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -29,9 +28,8 @@ public class AdminDashboardController : ControllerBase
         int SystemLoad
     );
 
-    /// <summary>Returns the current dashboard analytics statistics.</summary>
     [HttpGet("stats")]
-    [ProducesResponseType(typeof(ApiResponse<DashboardStatsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DashboardStatsDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetStats(CancellationToken ct)
     {
         var totalUsers = await _context.Users.CountAsync(ct);
@@ -48,6 +46,6 @@ public class AdminDashboardController : ControllerBase
             systemLoad
         );
 
-        return Ok(ApiResponse<DashboardStatsDto>.Ok(stats, "Dashboard stats retrieved successfully."));
+        return Ok(stats);
     }
 }

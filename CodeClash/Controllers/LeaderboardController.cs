@@ -1,4 +1,3 @@
-using CodeClash.API.Common;
 using CodeClash.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -32,14 +31,9 @@ public class LeaderboardController : ControllerBase
         string Country
     );
 
-    // ─────────────────────────────────────────────────────────────
     // GET /api/v1/leaderboard
-    // ─────────────────────────────────────────────────────────────
-    /// <summary>Returns list of all users in the system sorted alphabetically with 0 points.</summary>
-    /// <response code="200">Users retrieved successfully</response>
-    /// <response code="401">Unauthorized</response>
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<LeaderboardUserDto[]>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LeaderboardUserDto[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLeaderboard(CancellationToken ct)
     {
         var users = await _context.Users
@@ -58,6 +52,6 @@ public class LeaderboardController : ControllerBase
             );
         }).ToArray();
 
-        return Ok(ApiResponse<LeaderboardUserDto[]>.Ok(dtos, "Leaderboard retrieved successfully."));
+        return Ok(dtos);
     }
 }

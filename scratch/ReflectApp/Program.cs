@@ -11,32 +11,34 @@ class Program
             try
             {
                 conn.Open();
-                var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT TOP 5 Id, ProblemId, Status, RuntimeOutput, CompileOutput, CreatedAt FROM Submissions ORDER BY CreatedAt DESC";
-                
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        Console.WriteLine("--------------------------------------------------");
-                        Console.WriteLine($"Id: {reader["Id"]}");
-                        Console.WriteLine($"Status: {reader["Status"]}");
-                        Console.WriteLine($"RuntimeOutput: {reader["RuntimeOutput"]}");
-                        Console.WriteLine($"CompileOutput: {reader["CompileOutput"]}");
-                        Console.WriteLine($"CreatedAt: {reader["CreatedAt"]}");
-                    }
-                }
-                var probCmd = conn.CreateCommand();
-                probCmd.CommandText = "SELECT Id, Title, Slug FROM Problems WHERE Id = '0e27992c-0b0b-4a80-ac86-e7faa69c940f'";
-                using (var probReader = probCmd.ExecuteReader())
-                {
-                    if (probReader.Read())
-                    {
-                        Console.WriteLine($"Problem ID: {probReader["Id"]}");
-                        Console.WriteLine($"Title: {probReader["Title"]}");
-                        Console.WriteLine($"Slug: {probReader["Slug"]}");
-                    }
-                }
+                var userCmd = conn.CreateCommand();
+                userCmd.CommandText = "SELECT TOP 1 Id FROM Users";
+                var userId = userCmd.ExecuteScalar()?.ToString() ?? Guid.NewGuid().ToString();
+
+                var insertCmd = conn.CreateCommand();
+                insertCmd.CommandText = @"
+                    IF NOT EXISTS (SELECT 1 FROM Problems WHERE Slug = 'palindrome-number')
+                    BEGIN
+                        DECLARE @ProbId UNIQUEIDENTIFIER = NEWID();
+                        INSERT INTO Problems (Id, Title, Slug, Difficulty, Category, StatementMarkdown, ConstraintsJson, AllowedLanguagesJson, TimeLimitMs, MemoryLimitMb, IsActive, CreatedByUserId, CreatedAt, UpdatedAt)
+                        VALUES (@ProbId, 'Palindrome Number', 'palindrome-number', 'Easy', 'Algorithms', 'Given an integer x, return true if x is a palindrome, and false otherwise.', '[]', '[]', 2000, 256, 1, @UserId, GETUTCDATE(), GETUTCDATE());
+
+                        INSERT INTO TestCases (Id, ProblemId, Input, ExpectedOutput, IsHidden, OrderIndex)
+                        VALUES 
+                        (NEWID(), @ProbId, '121', 'true', 0, 0),
+                        (NEWID(), @ProbId, '-121', 'false', 0, 1),
+                        (NEWID(), @ProbId, '10', 'false', 0, 2);
+                        
+                        SELECT @ProbId AS NewProbId;
+                    END
+                    ELSE
+                    BEGIN
+                        SELECT Id AS NewProbId FROM Problems WHERE Slug = 'palindrome-number';
+                    END
+                ";
+                insertCmd.Parameters.AddWithValue("@UserId", userId);
+                var newId = insertCmd.ExecuteScalar();
+                Console.WriteLine($"Palindrome Problem ID: {newId}");
             }
             catch (Exception ex)
             {

@@ -81,8 +81,8 @@ public class DockerExecutionService : IDockerExecutionService
 
             // 2 — Set up files inside /app directory
             // We run as root first to create directory and copy files
-            await RunExecAsync(_dockerClient, containerId, new[] { "mkdir", "-p", "/app" }, ct: ct);
-            await RunExecAsync(_dockerClient, containerId, new[] { "chmod", "-R", "777", "/app" }, ct: ct);
+            await RunCommandDetachedAndWaitAsync(_dockerClient, containerId, new[] { "mkdir", "-p", "/app" }, ct: ct);
+            await RunCommandDetachedAndWaitAsync(_dockerClient, containerId, new[] { "chmod", "-R", "777", "/app" }, ct: ct);
 
             var codeTarStream = TarArchiveHelper.CreateTarStream((fileName, wrappedCode));
             await _dockerClient.Containers.ExtractArchiveToContainerAsync(
@@ -95,8 +95,24 @@ public class DockerExecutionService : IDockerExecutionService
             string? compileStderr = null;
             if (compileCmd != null)
             {
+                // Wrap compilation command to redirect output to files so we don't need socket hijacking
+                string compileShellCmd;
+                if (compileCmd.Length == 3 && compileCmd[0] == "sh" && compileCmd[1] == "-c")
+                {
+                    compileShellCmd = $"({compileCmd[2]}) > /app/compile_stdout.txt 2> /app/compile_stderr.txt; echo $? > /app/compile_exitcode.txt";
+                }
+                else
+                {
+                    var joinedArgs = string.Join(" ", compileCmd.Select(arg => arg.Contains(" ") ? $"\"{arg}\"" : arg));
+                    compileShellCmd = $"{joinedArgs} > /app/compile_stdout.txt 2> /app/compile_stderr.txt; echo $? > /app/compile_exitcode.txt";
+                }
+
                 _logger.LogInformation("Compilation started inside container {ContainerId}.", containerId);
-                var (cStdout, cStderr, cExitCode) = await RunExecAsync(_dockerClient, containerId, compileCmd, ct: ct);
+                var cExitCode = await RunCommandDetachedAndWaitAsync(_dockerClient, containerId, new[] { "sh", "-c", compileShellCmd }, ct: ct);
+                
+                var cStdout = await ReadFileFromContainerAsync(containerId, "/app/compile_stdout.txt", ct);
+                var cStderr = await ReadFileFromContainerAsync(containerId, "/app/compile_stderr.txt", ct);
+                
                 _logger.LogInformation("Compilation finished inside container {ContainerId} with exit code {ExitCode}.", containerId, cExitCode);
 
                 if (cExitCode != 0)
@@ -113,7 +129,7 @@ public class DockerExecutionService : IDockerExecutionService
             }
 
             // Ensure non-root execution has full permissions to executable
-            await RunExecAsync(_dockerClient, containerId, new[] { "chmod", "-R", "777", "/app" }, ct: ct);
+            await RunCommandDetachedAndWaitAsync(_dockerClient, containerId, new[] { "chmod", "-R", "777", "/app" }, ct: ct);
 
             // 4 — Execute Test Cases sequentially
             var testCaseResults = new List<TestCaseResultDto>();
@@ -147,22 +163,24 @@ public class DockerExecutionService : IDockerExecutionService
 
                 var stopwatch = Stopwatch.StartNew();
                 // Execute command inside container as user 'nobody'
-                await RunExecAsync(_dockerClient, containerId, testCmd, user: "65534", ct: ct);
+                await RunCommandDetachedAndWaitAsync(_dockerClient, containerId, testCmd, user: "65534", ct: ct);
                 stopwatch.Stop();
 
                 var currentExecutionTime = (int)stopwatch.ElapsedMilliseconds;
 
-                // Read output, error, exit code and cgroup memory limits
-                var (stdout, _, _) = await RunExecAsync(_dockerClient, containerId, new[] { "cat", "/app/stdout.txt" }, ct: ct);
-                var (stderr, _, _) = await RunExecAsync(_dockerClient, containerId, new[] { "cat", "/app/stderr.txt" }, ct: ct);
-                var (exitCodeStr, _, _) = await RunExecAsync(_dockerClient, containerId, new[] { "cat", "/app/exitcode.txt" }, ct: ct);
-                
-                // Read peak memory from cgroup peak files
-                var (memStr, _, _) = await RunExecAsync(_dockerClient, containerId, new[]
+                // Read output, error, exit code directly from container files
+                var stdout = await ReadFileFromContainerAsync(containerId, "/app/stdout.txt", ct);
+                var stderr = await ReadFileFromContainerAsync(containerId, "/app/stderr.txt", ct);
+                var exitCodeStr = await ReadFileFromContainerAsync(containerId, "/app/exitcode.txt", ct);
+
+                // Read peak memory by outputting to a file first
+                var memCmd = new[]
                 {
                     "sh", "-c",
-                    "cat /sys/fs/cgroup/memory.peak 2>/dev/null || cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes 2>/dev/null || echo 0"
-                }, ct: ct);
+                    "(cat /sys/fs/cgroup/memory.peak 2>/dev/null || cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes 2>/dev/null || echo 0) > /app/memory.txt"
+                };
+                await RunCommandDetachedAndWaitAsync(_dockerClient, containerId, memCmd, ct: ct);
+                var memStr = await ReadFileFromContainerAsync(containerId, "/app/memory.txt", ct);
 
                 int.TryParse(exitCodeStr.Trim(), out var exitCode);
                 long.TryParse(memStr.Trim(), out var peakMemoryBytes);
@@ -327,7 +345,7 @@ public class DockerExecutionService : IDockerExecutionService
         }
     }
 
-    private static async Task<(string Stdout, string Stderr, int ExitCode)> RunExecAsync(
+    private static async Task<int> RunCommandDetachedAndWaitAsync(
         DockerClient client,
         string containerId,
         string[] cmd,
@@ -338,47 +356,70 @@ public class DockerExecutionService : IDockerExecutionService
             containerId,
             new ContainerExecCreateParameters
             {
-                AttachStdout = true,
-                AttachStderr = true,
+                AttachStdout = false,
+                AttachStderr = false,
                 Cmd = cmd,
                 User = user
             },
             ct);
 
-        using var stream = await client.Exec.StartAndAttachContainerExecAsync(execConfig.ID, false, ct);
-        
-        var streamResult = await ReadStreamAsync(stream, ct);
-        string stdout = streamResult.stdout;
-        string stderr = streamResult.stderr;
-        
-        var inspect = await client.Exec.InspectContainerExecAsync(execConfig.ID, ct);
-        return (stdout, stderr, (int)inspect.ExitCode);
-    }
+        await client.Exec.StartContainerExecAsync(execConfig.ID, ct);
 
-    private static async Task<(string stdout, string stderr)> ReadStreamAsync(MultiplexedStream stream, CancellationToken ct)
-    {
-        var stdoutBuilder = new StringBuilder();
-        var stderrBuilder = new StringBuilder();
-        var buffer = new byte[4096];
-        
         while (true)
         {
-            var result = await stream.ReadOutputAsync(buffer, 0, buffer.Length, ct);
-            if (result.EOF)
-                break;
-                
-            var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
-            if (result.Target == MultiplexedStream.TargetStream.StandardOut)
+            var inspect = await client.Exec.InspectContainerExecAsync(execConfig.ID, ct);
+            if (!inspect.Running)
             {
-                stdoutBuilder.Append(text);
+                return (int)inspect.ExitCode;
             }
-            else if (result.Target == MultiplexedStream.TargetStream.StandardError)
+            await Task.Delay(50, ct);
+        }
+    }
+
+    private async Task<string> ReadFileFromContainerAsync(string containerId, string path, CancellationToken ct)
+    {
+        try
+        {
+            var response = await _dockerClient.Containers.GetArchiveFromContainerAsync(
+                containerId,
+                new GetArchiveFromContainerParameters { Path = path },
+                false,
+                ct);
+
+            using (var stream = response.Stream)
             {
-                stderrBuilder.Append(text);
+                return await ExtractSingleFileFromTarStreamAsync(stream, ct);
             }
         }
-        
-        return (stdoutBuilder.ToString(), stderrBuilder.ToString());
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to read file {Path} from container {ContainerId}", path, containerId);
+            return string.Empty;
+        }
+    }
+
+    private static async Task<string> ExtractSingleFileFromTarStreamAsync(Stream tarStream, CancellationToken ct)
+    {
+        using var ms = new MemoryStream();
+        await tarStream.CopyToAsync(ms, ct);
+        var bytes = ms.ToArray();
+        if (bytes.Length < 512) return string.Empty;
+
+        // TAR header file size is at offset 124, length 12 (octal representation)
+        var sizeString = Encoding.UTF8.GetString(bytes, 124, 12).Trim('\0', ' ');
+        try
+        {
+            var fileSize = Convert.ToInt64(sizeString.Trim(), 8);
+            if (fileSize <= 0 || bytes.Length < 512 + fileSize)
+            {
+                return string.Empty;
+            }
+            return Encoding.UTF8.GetString(bytes, 512, (int)fileSize);
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private static bool CompareOutput(string actual, string expected)

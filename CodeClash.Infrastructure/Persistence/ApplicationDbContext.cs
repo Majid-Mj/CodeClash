@@ -22,6 +22,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // ── Notifications ──────────────────────────────────────────────────────────
     public DbSet<Notification> Notifications => Set<Notification>();
 
+    // ── AI ────────────────────────────────────────────────────────────────────
+    public DbSet<AIAnalysis> AIAnalyses => Set<AIAnalysis>();
+    public DbSet<PromptHistory> PromptHistories => Set<PromptHistory>();
+    public DbSet<AIUsageLog> AIUsageLogs => Set<AIUsageLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

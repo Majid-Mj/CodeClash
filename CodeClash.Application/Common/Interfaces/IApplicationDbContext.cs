@@ -15,5 +15,10 @@ public interface IApplicationDbContext
     // ── Notifications ──────────────────────────────────────────────────────────
     DbSet<Notification> Notifications { get; }
     
+    // ── AI ────────────────────────────────────────────────────────────────────
+    DbSet<AIAnalysis> AIAnalyses { get; }
+    DbSet<PromptHistory> PromptHistories { get; }
+    DbSet<AIUsageLog> AIUsageLogs { get; }
+    
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // ── Problems (new) ────────────────────────────────────────────────────────
     public DbSet<Problem> Problems => Set<Problem>();
     public DbSet<TestCase> TestCases => Set<TestCase>();
+    public DbSet<Submission> Submissions => Set<Submission>();
 
     // ── Notifications ──────────────────────────────────────────────────────────
     public DbSet<Notification> Notifications => Set<Notification>();

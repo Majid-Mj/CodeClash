@@ -1,4 +1,4 @@
-﻿namespace CodeClash.Domain.Enums;
+namespace CodeClash.Domain.Enums;
 
 public enum ProgrammingLanguage
 {
@@ -6,5 +6,8 @@ public enum ProgrammingLanguage
     Java = 2,
     Python = 3,
     Cpp = 4,
-    JavaScript = 5
+    JavaScript = 5,
+    C = 6,
+    Go = 7,
+    Rust = 8
 }

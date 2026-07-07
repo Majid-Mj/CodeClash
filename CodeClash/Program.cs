@@ -341,6 +341,71 @@ await db.Database.MigrateAsync();
         await db.SaveChangesAsync();
     }
 
+    // Seed Problems
+    if (!await db.Problems.AnyAsync())
+    {
+        var adminUserId = adminUser.Id;
+        var allowedLangs = "[\"c\", \"cpp\", \"java\", \"csharp\", \"python\", \"javascript\", \"go\", \"rust\"]";
+        
+        // 1. Two Sum
+        var twoSum = CodeClash.Domain.Entities.Problem.Create(
+            "Two Sum",
+            CodeClash.Domain.Enums.Difficulty.Easy,
+            CodeClash.Domain.Enums.ProblemCategory.Arrays,
+            "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.\n\n### Input Format:\n- First line contains the `target` integer.\n- Second line contains space-separated integers representing `nums` array.\n\n### Output Format:\n- Output the two indices separated by a space.",
+            "[\"2 <= nums.length <= 10^4\", \"-10^9 <= nums[i] <= 10^9\", \"-10^9 <= target <= 10^9\"]",
+            allowedLangs,
+            2000,
+            256,
+            adminUserId
+        );
+        twoSum.AddTestCase("9\n2 7 11 15", "0 1", false);
+        twoSum.AddTestCase("6\n3 2 4", "1 2", false);
+        twoSum.AddTestCase("6\n3 3", "0 1", true);
+        twoSum.Activate();
+        await db.Problems.AddAsync(twoSum);
+
+        // 2. Palindrome Number
+        var palindromeNum = CodeClash.Domain.Entities.Problem.Create(
+            "Palindrome Number",
+            CodeClash.Domain.Enums.Difficulty.Easy,
+            CodeClash.Domain.Enums.ProblemCategory.Math,
+            "Given an integer `x`, return `true` if `x` is a palindrome, and `false` otherwise.\n\n### Input Format:\n- A single line containing the integer `x`.\n\n### Output Format:\n- Output `true` or `false`.",
+            "[\"-2^31 <= x <= 2^31 - 1\"]",
+            allowedLangs,
+            2000,
+            256,
+            adminUserId
+        );
+        palindromeNum.AddTestCase("121", "true", false);
+        palindromeNum.AddTestCase("-121", "false", false);
+        palindromeNum.AddTestCase("10", "false", true);
+        palindromeNum.Activate();
+        await db.Problems.AddAsync(palindromeNum);
+
+        // 3. Valid Parentheses
+        var validParentheses = CodeClash.Domain.Entities.Problem.Create(
+            "Valid Parentheses",
+            CodeClash.Domain.Enums.Difficulty.Easy,
+            CodeClash.Domain.Enums.ProblemCategory.Strings,
+            "Given a string `s` containing just the characters `(`, `)`, `{`, `}`, `[` and `]`, determine if the input string is valid.\n\nAn input string is valid if:\n1. Open brackets must be closed by the same type of brackets.\n2. Open brackets must be closed in the correct order.\n3. Every close bracket has a corresponding open bracket of the same type.\n\n### Input Format:\n- A single line containing the string `s`.\n\n### Output Format:\n- Output `true` or `false`.",
+            "[\"1 <= s.length <= 10^4\", \"s consists of parentheses only '()[]{}'\"]",
+            allowedLangs,
+            2000,
+            256,
+            adminUserId
+        );
+        validParentheses.AddTestCase("()", "true", false);
+        validParentheses.AddTestCase("()[]{}", "true", false);
+        validParentheses.AddTestCase("(]", "false", false);
+        validParentheses.AddTestCase("([)]", "false", true);
+        validParentheses.AddTestCase("{[]}", "true", true);
+        validParentheses.Activate();
+        await db.Problems.AddAsync(validParentheses);
+
+        await db.SaveChangesAsync();
+    }
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseStaticFiles();
 

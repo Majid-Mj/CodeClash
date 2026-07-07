@@ -11,6 +11,7 @@ public interface IApplicationDbContext
     // ── Problems (new) ────────────────────────────────────────────────────────
     DbSet<Problem> Problems { get; }
     DbSet<TestCase> TestCases { get; }
+    DbSet<Submission> Submissions { get; }
     // ── Notifications ──────────────────────────────────────────────────────────
     DbSet<Notification> Notifications { get; }
     

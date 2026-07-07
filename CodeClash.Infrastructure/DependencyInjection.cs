@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IFileStorageService, FileStorageService>();
+        services.AddScoped<IDockerExecutionService, DockerExecutionService>();
 
         return services;
     }

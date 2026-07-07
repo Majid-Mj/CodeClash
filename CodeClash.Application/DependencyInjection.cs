@@ -1,4 +1,4 @@
-﻿using CodeClash.Application.Common.Behaviours;
+using CodeClash.Application.Common.Behaviours;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +16,9 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
+
+        services.AddSingleton<CodeClash.Application.Features.AIAnalysis.Services.PromptBuilder>();
+        services.AddSingleton<CodeClash.Application.Features.AIAnalysis.Services.JsonParser>();
 
         return services;
     }

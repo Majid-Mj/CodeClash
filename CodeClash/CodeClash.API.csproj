@@ -7,6 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="appsettings.Development.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="appsettings.Development.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CodeClash.Application\CodeClash.Application.csproj" />
     <ProjectReference Include="..\CodeClash.Infrastructure\CodeClash.Infrastructure.csproj" />
   </ItemGroup>

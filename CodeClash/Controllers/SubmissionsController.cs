@@ -1,6 +1,8 @@
 using CodeClash.API.Extensions;
 using CodeClash.Application.Features.Submissions.Commands.CreateSubmission;
 using CodeClash.Application.Features.Submissions.DTOs;
+using CodeClash.Application.Features.Submissions.Queries.GetSubmissions;
+using CodeClash.Application.Common.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -36,6 +38,23 @@ public class SubmissionsController : ControllerBase
         var userId = User.GetUserId();
         var result = await _mediator.Send(new CreateSubmissionCommand(dto, userId), ct);
 
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { message = result.Message, errors = result.Errors });
+        }
+
+        return Ok(result.Data);
+    }
+
+    // GET /api/v1/submissions
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(PaginatedList<SubmissionSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSubmissions(
+        [FromQuery] GetSubmissionsQuery query,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(query, ct);
         if (!result.IsSuccess)
         {
             return BadRequest(new { message = result.Message, errors = result.Errors });

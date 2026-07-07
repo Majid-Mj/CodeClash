@@ -10,6 +10,7 @@ using CodeClash.Application.Common.Interfaces;
 using CodeClash.Domain.Enums;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace CodeClash.Infrastructure.Services;
@@ -19,13 +20,19 @@ public class DockerExecutionService : IDockerExecutionService
     private readonly ILogger<DockerExecutionService> _logger;
     private readonly DockerClient _dockerClient;
 
-    public DockerExecutionService(ILogger<DockerExecutionService> logger)
+    public DockerExecutionService(ILogger<DockerExecutionService> logger, IConfiguration config)
     {
         _logger = logger;
 
-        // Automatically detect platform and configure Docker daemon URI
-        var isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
-        var dockerUri = isWindows ? "npipe://./pipe/docker_engine" : "unix:///var/run/docker.sock";
+        // Read custom Docker Host URI from configuration, or fallback to platform defaults
+        var dockerUri = config["Docker:HostUri"];
+        if (string.IsNullOrEmpty(dockerUri))
+        {
+            var isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+            dockerUri = isWindows ? "npipe://./pipe/docker_engine" : "unix:///var/run/docker.sock";
+        }
+
+        _logger.LogInformation("Initializing DockerClient with URI: {Uri}", dockerUri);
         _dockerClient = new DockerClientConfiguration(new Uri(dockerUri)).CreateClient();
     }
 

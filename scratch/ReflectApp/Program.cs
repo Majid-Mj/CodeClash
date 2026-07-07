@@ -23,18 +23,13 @@ class Program
                         Console.WriteLine($"Status: {reader["Status"]}");
                         Console.WriteLine($"RuntimeOutput: {reader["RuntimeOutput"]}");
                         Console.WriteLine($"CompileOutput: {reader["CompileOutput"]}");
-                        Console.WriteLine($"CreatedAt: {reader["CreatedAt"]}");
-                    }
-                }
                 var probCmd = conn.CreateCommand();
-                probCmd.CommandText = "SELECT Id, Title, Slug FROM Problems WHERE Id = '0e27992c-0b0b-4a80-ac86-e7faa69c940f'";
+                probCmd.CommandText = "SELECT Id, Title, Slug FROM Problems";
                 using (var probReader = probCmd.ExecuteReader())
                 {
-                    if (probReader.Read())
+                    while (probReader.Read())
                     {
-                        Console.WriteLine($"Problem ID: {probReader["Id"]}");
-                        Console.WriteLine($"Title: {probReader["Title"]}");
-                        Console.WriteLine($"Slug: {probReader["Slug"]}");
+                        Console.WriteLine($"Problem ID: {probReader["Id"]}, Slug: {probReader["Slug"]}");
                     }
                 }
             }

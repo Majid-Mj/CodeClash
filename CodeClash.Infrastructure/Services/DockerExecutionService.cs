@@ -108,10 +108,13 @@ public class DockerExecutionService : IDockerExecutionService
                 }
 
                 _logger.LogInformation("Compilation started inside container {ContainerId}.", containerId);
-                var cExitCode = await RunCommandDetachedAndWaitAsync(_dockerClient, containerId, new[] { "sh", "-c", compileShellCmd }, ct: ct);
+                await RunCommandDetachedAndWaitAsync(_dockerClient, containerId, new[] { "sh", "-c", compileShellCmd }, ct: ct);
                 
                 var cStdout = await ReadFileFromContainerAsync(containerId, "/app/compile_stdout.txt", ct);
                 var cStderr = await ReadFileFromContainerAsync(containerId, "/app/compile_stderr.txt", ct);
+                var cExitCodeStr = await ReadFileFromContainerAsync(containerId, "/app/compile_exitcode.txt", ct);
+                
+                int.TryParse(cExitCodeStr.Trim(), out var cExitCode);
                 
                 _logger.LogInformation("Compilation finished inside container {ContainerId} with exit code {ExitCode}.", containerId, cExitCode);
 

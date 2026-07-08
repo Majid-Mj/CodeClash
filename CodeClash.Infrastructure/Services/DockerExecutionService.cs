@@ -459,6 +459,17 @@ public class DockerExecutionService : IDockerExecutionService
 
     private string WrapSourceCode(string sourceCode, string language, string slug)
     {
+        // Unescape source code if it contains double-escaped newlines but no actual newlines (JSON submission case)
+        if (sourceCode.Contains("\\n") && !sourceCode.Contains("\n"))
+        {
+            sourceCode = sourceCode
+                .Replace("\\r\\n", "\n")
+                .Replace("\\n", "\n")
+                .Replace("\\t", "\t")
+                .Replace("\\\"", "\"")
+                .Replace("\\\\", "\\");
+        }
+
         slug = slug.ToLowerInvariant().Trim();
         var lang = language.ToLowerInvariant().Trim();
 
@@ -731,6 +742,507 @@ int main() {
         Solution sol;
         bool res = sol.isValid(s);
         cout << (res ? ""true"" : ""false"") << endl;
+    }
+    return 0;
+}";
+            }
+        }
+
+        if (slug == "longest-substring-without-repeating-characters")
+        {
+            if (lang == "csharp" || lang == "c#")
+            {
+                return sourceCode + "\n\n" + @"
+public class Driver {
+    public static void Main() {
+        string line = System.Console.ReadLine();
+        if (line == null) return;
+        string s = line.Trim();
+        if (s.Length >= 2 && s[0] == '""' && s[s.Length - 1] == '""') {
+            s = s.Substring(1, s.Length - 2);
+        }
+        int res = new Solution().LengthOfLongestSubstring(s);
+        System.Console.WriteLine(res);
+    }
+}";
+            }
+            if (lang == "python" || lang == "python3" || lang == "py")
+            {
+                return sourceCode + "\n\n" + @"
+import sys
+line = sys.stdin.read().strip()
+if len(line) >= 2 and line[0] == '""' and line[-1] == '""':
+    line = line[1:-1]
+res = Solution().lengthOfLongestSubstring(line)
+print(res)
+";
+            }
+            if (lang == "javascript" || lang == "js")
+            {
+                return sourceCode + "\n\n" + @"
+const fs = require('fs');
+let input = fs.readFileSync('/dev/stdin', 'utf-8').trim();
+if (input.length >= 2 && input[0] === '""' && input[input.length - 1] === '""') {
+    input = input.substring(1, input.length - 1);
+}
+let res;
+if (typeof lengthOfLongestSubstring === 'function') {
+    res = lengthOfLongestSubstring(input);
+} else {
+    res = new Solution().lengthOfLongestSubstring(input);
+}
+console.log(res);
+";
+            }
+            if (lang == "java")
+            {
+                var modified = sourceCode.Replace("public class Solution", "class Solution");
+                return modified + "\n\n" + @"
+import java.util.Scanner;
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        String s = sc.hasNextLine() ? sc.nextLine().trim() : """";
+        if (s.length() >= 2 && s.charAt(0) == '""' && s.charAt(s.length() - 1) == '""') {
+            s = s.substring(1, s.length() - 1);
+        }
+        int res = new Solution().lengthOfLongestSubstring(s);
+        System.out.println(res);
+    }
+}";
+            }
+            if (lang == "cpp" || lang == "c++")
+            {
+                return sourceCode + "\n\n" + @"
+#include <iostream>
+#include <string>
+using namespace std;
+int main() {
+    string s;
+    if (getline(cin, s)) {
+        if (s.length() >= 2 && s.front() == '""' && s.back() == '""') {
+            s = s.substr(1, s.length() - 2);
+        }
+        Solution sol;
+        int res = sol.lengthOfLongestSubstring(s);
+        cout << res << endl;
+    }
+    return 0;
+}";
+            }
+        }
+
+        if (slug == "invert-binary-tree")
+        {
+            if (lang == "csharp" || lang == "c#")
+            {
+                return sourceCode + "\n\n" + @"
+using System;
+using System.Collections.Generic;
+
+public class TreeNode {
+    public int val;
+    public TreeNode left;
+    public TreeNode right;
+    public TreeNode(int val=0, TreeNode left=null, TreeNode right=null) {
+        this.val = val;
+        this.left = left;
+        this.right = right;
+    }
+}
+
+public class Driver {
+    public static TreeNode Deserialize(string data) {
+        if (string.IsNullOrEmpty(data)) return null;
+        data = data.Trim();
+        if (data.StartsWith(""["") && data.EndsWith(""\]"")) {
+            data = data.Substring(1, data.Length - 2);
+        }
+        if (string.IsNullOrEmpty(data)) return null;
+        string[] parts = data.Split(',');
+        if (parts.Length == 0 || string.IsNullOrEmpty(parts[0].Trim())) return null;
+        
+        TreeNode root = new TreeNode(int.Parse(parts[0].Trim()));
+        Queue<TreeNode> queue = new Queue<TreeNode>();
+        queue.Enqueue(root);
+        int i = 1;
+        while (queue.Count > 0 && i < parts.Length) {
+            TreeNode current = queue.Dequeue();
+            if (i < parts.Length) {
+                string valStr = parts[i++].Trim();
+                if (valStr != ""null"" && !string.IsNullOrEmpty(valStr)) {
+                    current.left = new TreeNode(int.Parse(valStr));
+                    queue.Enqueue(current.left);
+                }
+            }
+            if (i < parts.Length) {
+                string valStr = parts[i++].Trim();
+                if (valStr != ""null"" && !string.IsNullOrEmpty(valStr)) {
+                    current.right = new TreeNode(int.Parse(valStr));
+                    queue.Enqueue(current.right);
+                }
+            }
+        }
+        return root;
+    }
+
+    public static string Serialize(TreeNode root) {
+        if (root == null) return ""[]"";
+        List<string> result = new List<string>();
+        Queue<TreeNode> queue = new Queue<TreeNode>();
+        queue.Enqueue(root);
+        while (queue.Count > 0) {
+            TreeNode node = queue.Dequeue();
+            if (node != null) {
+                result.Add(node.val.ToString());
+                queue.Enqueue(node.left);
+                queue.Enqueue(node.right);
+            } else {
+                result.Add(""null"");
+            }
+        }
+        while (result.Count > 0 && result[result.Count - 1] == ""null"") {
+            result.RemoveAt(result.Count - 1);
+        }
+        return ""["" + string.Join("","", result) + ""]"";
+    }
+
+    public static void Main() {
+        string line = System.Console.ReadLine();
+        if (line == null) return;
+        TreeNode root = Deserialize(line);
+        TreeNode inverted = new Solution().InvertTree(root);
+        System.Console.WriteLine(Serialize(inverted));
+    }
+}";
+            }
+            if (lang == "python" || lang == "python3" || lang == "py")
+            {
+                return sourceCode + "\n\n" + @"
+import sys
+from collections import deque
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def deserialize(data):
+    data = data.strip()
+    if data.startswith('[') and data.endswith(']'):
+        data = data[1:-1]
+    if not data:
+        return None
+    parts = [x.strip() for x in data.split(',')]
+    if not parts or parts[0] == '' or parts[0] == 'null':
+        return None
+    
+    root = TreeNode(int(parts[0]))
+    queue = deque([root])
+    i = 1
+    while queue and i < len(parts):
+        node = queue.popleft()
+        if i < len(parts):
+            val = parts[i]
+            i += 1
+            if val != 'null' and val != '':
+                node.left = TreeNode(int(val))
+                queue.append(node.left)
+        if i < len(parts):
+            val = parts[i]
+            i += 1
+            if val != 'null' and val != '':
+                node.right = TreeNode(int(val))
+                queue.append(node.right)
+    return root
+
+def serialize(root):
+    if not root:
+        return ""[]""
+    result = []
+    queue = deque([root])
+    while queue:
+        node = queue.popleft()
+        if node:
+            result.append(str(node.val))
+            queue.append(node.left)
+            queue.append(node.right)
+        else:
+            result.append(""null"")
+    while result and result[-1] == ""null"":
+        result.pop()
+    return ""["" + "","".join(result) + ""]""
+
+line = sys.stdin.read().strip()
+if line:
+    root = deserialize(line)
+    sol = Solution()
+    inverted = sol.invertTree(root)
+    print(serialize(inverted))
+";
+            }
+            if (lang == "javascript" || lang == "js")
+            {
+                return sourceCode + "\n\n" + @"
+const fs = require('fs');
+
+function TreeNode(val, left, right) {
+    this.val = (val===undefined ? 0 : val)
+    this.left = (left===undefined ? null : left)
+    this.right = (right===undefined ? null : right)
+}
+
+function deserialize(data) {
+    data = data.trim();
+    if (data.startsWith('[') && data.endsWith(']')) {
+        data = data.substring(1, data.length - 1);
+    }
+    if (!data) return null;
+    const parts = data.split(',').map(x => x.trim());
+    if (parts.length === 0 || parts[0] === '' || parts[0] === 'null') return null;
+    
+    const root = new TreeNode(parseInt(parts[0], 10));
+    const queue = [root];
+    let i = 1;
+    while (queue.length > 0 && i < parts.length) {
+        const node = queue.shift();
+        if (i < parts.length) {
+            const val = parts[i++];
+            if (val !== 'null' && val !== '') {
+                node.left = new TreeNode(parseInt(val, 10));
+                queue.push(node.left);
+            }
+        }
+        if (i < parts.length) {
+            const val = parts[i++];
+            if (val !== 'null' && val !== '') {
+                node.right = new TreeNode(parseInt(val, 10));
+                queue.push(node.right);
+            }
+        }
+    }
+    return root;
+}
+
+function serialize(root) {
+    if (!root) return ""[]"";
+    const result = [];
+    const queue = [root];
+    while (queue.length > 0) {
+        const node = queue.shift();
+        if (node) {
+            result.push(node.val.toString());
+            queue.push(node.left);
+            queue.push(node.right);
+        } else {
+            result.push(""null"");
+        }
+    }
+    while (result.length > 0 && result[result.length - 1] === ""null"") {
+        result.pop();
+    }
+    return ""["" + result.join(',') + ""]"";
+}
+
+const input = fs.readFileSync('/dev/stdin', 'utf-8').trim();
+if (input) {
+    const root = deserialize(input);
+    let inverted;
+    if (typeof invertTree === 'function') {
+        inverted = invertTree(root);
+    } else {
+        inverted = new Solution().invertTree(root);
+    }
+    console.log(serialize(inverted));
+}
+";
+            }
+            if (lang == "java")
+            {
+                var modified = sourceCode.Replace("public class Solution", "class Solution");
+                return modified + "\n\n" + @"
+import java.util.*;
+
+class TreeNode {
+    int val;
+    TreeNode left;
+    TreeNode right;
+    TreeNode() {}
+    TreeNode(int val) { this.val = val; }
+    TreeNode(int val, TreeNode left, TreeNode right) {
+        this.val = val;
+        this.left = left;
+        this.right = right;
+    }
+}
+
+public class Main {
+    public static TreeNode deserialize(String data) {
+        data = data.trim();
+        if (data.startsWith(""["") && data.endsWith(""\]"")) {
+            data = data.substring(1, data.length() - 1);
+        }
+        if (data.isEmpty()) return null;
+        String[] parts = data.split("","");
+        if (parts.length == 0 || parts[0].trim().equals(""null"") || parts[0].trim().isEmpty()) return null;
+        
+        TreeNode root = new TreeNode(Integer.parseInt(parts[0].trim()));
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        int i = 1;
+        while (!queue.isEmpty() && i < parts.length) {
+            TreeNode current = queue.poll();
+            if (i < parts.length) {
+                String valStr = parts[i++].trim();
+                if (!valStr.equals(""null"") && !valStr.isEmpty()) {
+                    current.left = new TreeNode(Integer.parseInt(valStr));
+                    queue.offer(current.left);
+                }
+            }
+            if (i < parts.length) {
+                String valStr = parts[i++].trim();
+                if (!valStr.equals(""null"") && !valStr.isEmpty()) {
+                    current.right = new TreeNode(Integer.parseInt(valStr));
+                    queue.offer(current.right);
+                }
+            }
+        }
+        return root;
+    }
+
+    public static String serialize(TreeNode root) {
+        if (root == null) return ""[]"";
+        List<String> result = new ArrayList<>();
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            TreeNode node = queue.poll();
+            if (node != null) {
+                result.add(String.valueOf(node.val));
+                queue.offer(node.left);
+                queue.offer(node.right);
+            } else {
+                result.add(""null"");
+            }
+        }
+        while (!result.isEmpty() && result.get(result.size() - 1).equals(""null"")) {
+            result.remove(result.size() - 1);
+        }
+        StringBuilder sb = new StringBuilder(""["");
+        for (int i = 0; i < result.size(); i++) {
+            sb.append(result.get(i));
+            if (i < result.size() - 1) sb.append("","");
+        }
+        sb.append(""\]"");
+        return sb.toString();
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        if (sc.hasNextLine()) {
+            TreeNode root = deserialize(sc.nextLine());
+            TreeNode inverted = new Solution().invertTree(root);
+            System.out.println(serialize(inverted));
+        }
+    }
+}";
+            }
+            if (lang == "cpp" || lang == "c++")
+            {
+                return sourceCode + "\n\n" + @"
+#include <iostream>
+#include <string>
+#include <vector>
+#include <queue>
+#include <sstream>
+#include <algorithm>
+
+using namespace std;
+
+struct TreeNode {
+    int val;
+    TreeNode *left;
+    TreeNode *right;
+    TreeNode() : val(0), left(nullptr), right(nullptr) {}
+    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+};
+
+TreeNode* deserialize(string data) {
+    data.erase(remove(data.begin(), data.end(), ' '), data.end());
+    if (data.front() == '[') data = data.substr(1);
+    if (data.back() == ']') data = data.substr(0, data.size() - 1);
+    if (data.empty()) return nullptr;
+    
+    stringstream ss(data);
+    string item;
+    vector<string> parts;
+    while (getline(ss, item, ',')) {
+        parts.push_back(item);
+    }
+    if (parts.empty() || parts[0] == ""null"" || parts[0].empty()) return nullptr;
+    
+    TreeNode* root = new TreeNode(stoi(parts[0]));
+    queue<TreeNode*> q;
+    q.push(root);
+    int i = 1;
+    while (!q.empty() && i < parts.size()) {
+        TreeNode* curr = q.front();
+        q.pop();
+        if (i < parts.size()) {
+            string val = parts[i++];
+            if (val != ""null"" && !val.empty()) {
+                curr->left = new TreeNode(stoi(val));
+                q.push(curr->left);
+            }
+        }
+        if (i < parts.size()) {
+            string val = parts[i++];
+            if (val != ""null"" && !val.empty()) {
+                curr->right = new TreeNode(stoi(val));
+                q.push(curr->right);
+            }
+        }
+    }
+    return root;
+}
+
+string serialize(TreeNode* root) {
+    if (!root) return ""[]"";
+    vector<string> result;
+    queue<TreeNode*> q;
+    q.push(root);
+    while (!q.empty()) {
+        TreeNode* node = q.front();
+        q.pop();
+        if (node) {
+            result.push_back(to_string(node->val));
+            q.push(node->left);
+            q.push(node->right);
+        } else {
+            result.push_back(""null"");
+        }
+    }
+    while (!result.empty() && result.back() == ""null"") {
+        result.pop_back();
+    }
+    string res = ""["";
+    for (size_t i = 0; i < result.size(); ++i) {
+        res += result[i];
+        if (i < result.size() - 1) res += "","";
+    }
+    res += ""]"";
+    return res;
+}
+
+int main() {
+    string line;
+    if (getline(cin, line)) {
+        TreeNode* root = deserialize(line);
+        Solution sol;
+        TreeNode* inverted = sol.invertTree(root);
+        cout << serialize(inverted) << endl;
     }
     return 0;
 }";

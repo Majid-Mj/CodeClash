@@ -672,7 +672,7 @@ public class Driver {
         string line = System.Console.ReadLine();
         if (line == null) return;
         string s = line.Trim();
-        if (s.StartsWith("""") && s.EndsWith("""") && s.Length >= 2) {
+        if (s.Length >= 2 && s[0] == '""' && s[s.Length - 1] == '""') {
             s = s.Substring(1, s.Length - 2);
         }
         bool res = new Solution().IsValid(s);
@@ -685,7 +685,7 @@ public class Driver {
                 return sourceCode + "\n\n" + @"
 import sys
 line = sys.stdin.read().strip()
-if line.startswith('""') and line.endswith('""') and len(line) >= 2:
+if len(line) >= 2 and line[0] == '""' and line[-1] == '""':
     line = line[1:-1]
 res = Solution().isValid(line)
 print(str(res).lower())
@@ -696,7 +696,7 @@ print(str(res).lower())
                 return sourceCode + "\n\n" + @"
 const fs = require('fs');
 let input = fs.readFileSync('/dev/stdin', 'utf-8').trim();
-if (input.startsWith('""') && input.endsWith('""') && input.length >= 2) {
+if (input.length >= 2 && input[0] === '""' && input[input.length - 1] === '""') {
     input = input.substring(1, input.length - 1);
 }
 const res = isValid(input);
@@ -712,7 +712,7 @@ public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         String s = sc.hasNextLine() ? sc.nextLine().trim() : """";
-        if (s.startsWith(""\""") && s.endsWith(""\""") && s.length() >= 2) {
+        if (s.length() >= 2 && s.charAt(0) == '""' && s.charAt(s.length() - 1) == '""') {
             s = s.substring(1, s.length() - 1);
         }
         boolean res = new Solution().isValid(s);

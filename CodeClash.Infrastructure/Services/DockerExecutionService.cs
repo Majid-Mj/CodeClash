@@ -466,18 +466,28 @@ public class DockerExecutionService : IDockerExecutionService
             if (lang == "csharp" || lang == "c#")
             {
                 return sourceCode + "\n\n" + @"
+using System;
+using System.Text.RegularExpressions;
+using System.Linq;
+
 public class Driver {
     public static void Main() {
-        string targetLine = System.Console.ReadLine();
-        if (string.IsNullOrEmpty(targetLine)) return;
-        int target = int.Parse(targetLine.Trim());
-        string numsLine = System.Console.ReadLine();
-        if (string.IsNullOrEmpty(numsLine)) return;
-        var parts = numsLine.Trim().Split(new[] { ' ', ',' }, System.StringSplitOptions.RemoveEmptyEntries);
-        int[] nums = new int[parts.Length];
-        for (int i = 0; i < parts.Length; i++) nums[i] = int.Parse(parts[i]);
+        string line = System.Console.ReadLine();
+        if (string.IsNullOrEmpty(line)) return;
+        
+        var numsMatch = Regex.Match(line, @""nums\s*=\s*\[([^\]]+)\]"");
+        var targetMatch = Regex.Match(line, @""target\s*=\s*(-?\d+)"");
+        
+        if (!numsMatch.Success || !targetMatch.Success) return;
+        
+        int target = int.Parse(targetMatch.Groups[1].Value);
+        int[] nums = numsMatch.Groups[1].Value
+                              .Split(',')
+                              .Select(int.Parse)
+                              .ToArray();
+                              
         var res = new Solution().TwoSum(nums, target);
-        System.Console.WriteLine(string.Join("" "", res));
+        System.Console.WriteLine($""[{res[0]},{res[1]}]"");
     }
 }";
             }
@@ -485,25 +495,33 @@ public class Driver {
             {
                 return sourceCode + "\n\n" + @"
 import sys
-lines = sys.stdin.read().splitlines()
-if len(lines) >= 2:
-    target = int(lines[0].strip())
-    nums = list(map(int, lines[1].replace(',', ' ').split()))
-    sol = Solution()
-    res = sol.twoSum(nums, target)
-    print("" "".join(map(str, res)))
+import re
+
+line = sys.stdin.read().strip()
+if line:
+    nums_match = re.search(r""nums\s*=\s*\[([^\]]+)\]"", line)
+    target_match = re.search(r""target\s*=\s*(-?\d+)"", line)
+    if nums_match and target_match:
+        target = int(target_match.group(1))
+        nums = [int(x) for x in nums_match.group(1).split("","")]
+        res = Solution().twoSum(nums, target)
+        print(f""[{res[0]},{res[1]}]"")
 ";
             }
             if (lang == "javascript" || lang == "js")
             {
                 return sourceCode + "\n\n" + @"
 const fs = require('fs');
-const input = fs.readFileSync('/dev/stdin', 'utf-8').trim().split('\n');
-if (input.length >= 2) {
-    const target = parseInt(input[0].trim(), 10);
-    const nums = input[1].replace(/,/g, ' ').trim().split(/\s+/).map(Number);
-    const res = twoSum(nums, target);
-    console.log(res.join(' '));
+const input = fs.readFileSync('/dev/stdin', 'utf-8').trim();
+if (input) {
+    const numsMatch = input.match(/nums\s*=\s*\[([^\]]+)\]/);
+    const targetMatch = input.match(/target\s*=\s*(-?\d+)/);
+    if (numsMatch && targetMatch) {
+        const target = parseInt(targetMatch[1], 10);
+        const nums = numsMatch[1].split(',').map(Number);
+        const res = twoSum(nums, target);
+        console.log(""["" + res[0] + "","" + res[1] + ""]"");
+    }
 }
 ";
             }
@@ -511,19 +529,26 @@ if (input.length >= 2) {
             {
                 var modified = sourceCode.Replace("public class Solution", "class Solution");
                 return modified + "\n\n" + @"
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.Scanner;
+
 public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        if (sc.hasNextInt()) {
-            int target = sc.nextInt();
-            sc.nextLine();
-            if (sc.hasNextLine()) {
-                String[] parts = sc.nextLine().trim().split(""[\\s,]+"");
+        if (sc.hasNextLine()) {
+            String line = sc.nextLine();
+            Matcher numsMatcher = Pattern.compile(""nums\\s*=\\s*\\[([^\\]]+)\\]"").matcher(line);
+            Matcher targetMatcher = Pattern.compile(""target\\s*=\\s*(-?\d+)"").matcher(line);
+            if (numsMatcher.find() && targetMatcher.find()) {
+                int target = Integer.parseInt(targetMatcher.group(1));
+                String[] parts = numsMatcher.group(1).split("","");
                 int[] nums = new int[parts.length];
-                for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i]);
+                for (int i = 0; i < parts.length; i++) {
+                    nums[i] = Integer.parseInt(parts[i].trim());
+                }
                 int[] res = new Solution().twoSum(nums, target);
-                System.out.println(res[0] + "" "" + res[1]);
+                System.out.println(""["" + res[0] + "","" + res[1] + ""]"");
             }
         }
     }
@@ -534,26 +559,30 @@ public class Main {
                 return sourceCode + "\n\n" + @"
 #include <iostream>
 #include <vector>
-#include <sstream>
 #include <string>
+#include <regex>
+#include <sstream>
+
 using namespace std;
 int main() {
-    int target;
-    if (cin >> target) {
-        string line;
-        getline(cin, line);
-        if (getline(cin, line)) {
-            stringstream ss(line);
-            int num;
+    string line;
+    if (getline(cin, line)) {
+        smatch nums_match;
+        smatch target_match;
+        regex nums_regex(""nums\\s*=\\s*\\[([^\\]]+)\\]"");
+        regex target_regex(""target\\s*=\\s*(-?\d+)"");
+        if (regex_search(line, nums_match, nums_regex) && regex_search(line, target_match, target_regex)) {
+            int target = stoi(target_match[1].str());
+            stringstream ss(nums_match[1].str());
+            string temp;
             vector<int> nums;
-            while (ss >> num) {
-                nums.push_back(num);
-                if (ss.peek() == ',' || ss.peek() == ' ') ss.ignore();
+            while (getline(ss, temp, ',')) {
+                nums.push_back(stoi(temp));
             }
             Solution sol;
             vector<int> res = sol.twoSum(nums, target);
             if (res.size() >= 2) {
-                cout << res[0] << "" "" << res[1] << endl;
+                cout << ""["" << res[0] << "","" << res[1] << ""]"" << endl;
             }
         }
     }
@@ -642,7 +671,11 @@ public class Driver {
     public static void Main() {
         string line = System.Console.ReadLine();
         if (line == null) return;
-        bool res = new Solution().IsValid(line.Trim());
+        string s = line.Trim();
+        if (s.StartsWith("""") && s.EndsWith("""") && s.Length >= 2) {
+            s = s.Substring(1, s.Length - 2);
+        }
+        bool res = new Solution().IsValid(s);
         System.Console.WriteLine(res.ToString().ToLower());
     }
 }";
@@ -652,6 +685,8 @@ public class Driver {
                 return sourceCode + "\n\n" + @"
 import sys
 line = sys.stdin.read().strip()
+if line.startswith('""') and line.endswith('""') and len(line) >= 2:
+    line = line[1:-1]
 res = Solution().isValid(line)
 print(str(res).lower())
 ";
@@ -660,7 +695,10 @@ print(str(res).lower())
             {
                 return sourceCode + "\n\n" + @"
 const fs = require('fs');
-const input = fs.readFileSync('/dev/stdin', 'utf-8').trim();
+let input = fs.readFileSync('/dev/stdin', 'utf-8').trim();
+if (input.startsWith('""') && input.endsWith('""') && input.length >= 2) {
+    input = input.substring(1, input.length - 1);
+}
 const res = isValid(input);
 console.log(res.toString());
 ";
@@ -674,6 +712,9 @@ public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         String s = sc.hasNextLine() ? sc.nextLine().trim() : """";
+        if (s.startsWith(""\""") && s.endsWith(""\""") && s.length() >= 2) {
+            s = s.substring(1, s.length() - 1);
+        }
         boolean res = new Solution().isValid(s);
         System.out.println(res);
     }
@@ -688,6 +729,9 @@ using namespace std;
 int main() {
     string s;
     if (getline(cin, s)) {
+        if (s.length() >= 2 && s.front() == '""' && s.back() == '""') {
+            s = s.substr(1, s.length() - 2);
+        }
         Solution sol;
         bool res = sol.isValid(s);
         cout << (res ? ""true"" : ""false"") << endl;

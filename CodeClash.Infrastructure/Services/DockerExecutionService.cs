@@ -54,6 +54,13 @@ public class DockerExecutionService : IDockerExecutionService
 
         // 1 — Create Container
         var containerName = $"codeclash-judge-{Guid.NewGuid()}";
+
+        // .NET SDK needs more memory than 256MB to run dotnet properly.
+        // Override memory limit for csharp to at least 512MB.
+        var lang = language.ToLowerInvariant().Trim();
+        if ((lang == "csharp" || lang == "c#") && memoryLimitMb < 512)
+            memoryLimitMb = 512;
+
         var containerParams = new CreateContainerParameters
         {
             Image = imageName,

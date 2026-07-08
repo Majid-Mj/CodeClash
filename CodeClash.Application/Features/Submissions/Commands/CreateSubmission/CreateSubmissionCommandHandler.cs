@@ -139,7 +139,7 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
                 testCaseDtos.Count,
                 0,
                 0,
-                testCaseDtos.Select(tc => new SubmissionTestCaseResponseDto(tc.Id, "Skipped due to Internal Error")).ToList()
+                testCaseDtos.Select(tc => new SubmissionTestCaseResponseDto(tc.Id, "Skipped due to Internal Error", tc.Input, tc.ExpectedOutput, null, tc.IsHidden)).ToList()
             );
             return Result<SubmissionResponseDto>.Success(errorResponse, "Submission evaluation encountered an internal error.");
         }
@@ -170,7 +170,17 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
             result.TotalCount,
             result.ExecutionTimeMs ?? 0,
             result.MemoryUsedBytes ?? 0,
-            result.TestCases.Select(tc => new SubmissionTestCaseResponseDto(tc.Id, tc.Status)).ToList(),
+            result.TestCases.Select(tc => {
+                var originalTc = testCaseDtos.FirstOrDefault(t => t.Id == tc.Id);
+                return new SubmissionTestCaseResponseDto(
+                    tc.Id, 
+                    tc.Status, 
+                    originalTc?.Input, 
+                    originalTc?.ExpectedOutput, 
+                    tc.Output, 
+                    originalTc?.IsHidden ?? false
+                );
+            }).ToList(),
             result.CompileOutput
         );
 

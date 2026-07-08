@@ -306,7 +306,7 @@ public class DockerExecutionService : IDockerExecutionService
             "csharp" or "c#" => (
                 "mcr.microsoft.com/dotnet/sdk:8.0",
                 "solution.cs",
-                new[] { "sh", "-c", "dotnet new console -o /app/proj --force && cp /app/solution.cs /app/proj/Program.cs && dotnet build /app/proj -c Release -o /app/out" },
+                new[] { "sh", "-c", "dotnet new console -o /app/proj --force && cp /app/solution.cs /app/proj/Program.cs && dotnet build /app/proj -c Release -o /app/out /p:UseSharedCompilation=false" },
                 "dotnet /app/out/proj.dll"
             ),
             "python" or "python3" or "py" => ("python:3.12-slim", "solution.py", null, "python3 /app/solution.py"),

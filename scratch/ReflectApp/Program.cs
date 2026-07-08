@@ -11,10 +11,20 @@ class Program
             try
             {
                 conn.Open();
-                var updateCmd = conn.CreateCommand();
-                updateCmd.CommandText = "UPDATE TestCases SET ExpectedOutput = '[0,1]' WHERE Id = 'd38d275e-6019-4c24-9900-68f8c0599d65'";
-                int rows = updateCmd.ExecuteNonQuery();
-                Console.WriteLine($"Updated {rows} row(s) in TestCases table.");
+                var selectCmd = conn.CreateCommand();
+                selectCmd.CommandText = "SELECT TOP 3 Id, Status, CreatedAt, RuntimeOutput, CompileOutput FROM Submissions ORDER BY CreatedAt DESC";
+                using (var reader = selectCmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Console.WriteLine("-----------------------------");
+                        Console.WriteLine($"Submission ID: {reader["Id"]}");
+                        Console.WriteLine($"Status: {reader["Status"]}");
+                        Console.WriteLine($"CreatedAt: {reader["CreatedAt"]}");
+                        Console.WriteLine($"CompileOutput:\n{reader["CompileOutput"]}");
+                        Console.WriteLine($"RuntimeOutput:\n{reader["RuntimeOutput"]}");
+                    }
+                }
             }
             catch (Exception ex)
             {

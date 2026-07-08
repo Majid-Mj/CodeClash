@@ -12,15 +12,16 @@ class Program
             {
                 conn.Open();
                 var selectCmd = conn.CreateCommand();
-                selectCmd.CommandText = "SELECT TOP 3 Id, Status, CreatedAt, RuntimeOutput, CompileOutput FROM Submissions ORDER BY CreatedAt DESC";
+                selectCmd.CommandText = "SELECT Id, ProblemId, Language, SourceCode, Status, RuntimeOutput, CompileOutput FROM Submissions WHERE Id = 'e27e7092-e64b-40b6-9b8f-94809a2f5e80'";
                 using (var reader = selectCmd.ExecuteReader())
                 {
-                    while (reader.Read())
+                    if (reader.Read())
                     {
                         Console.WriteLine("-----------------------------");
                         Console.WriteLine($"Submission ID: {reader["Id"]}");
+                        Console.WriteLine($"Language: {reader["Language"]}");
                         Console.WriteLine($"Status: {reader["Status"]}");
-                        Console.WriteLine($"CreatedAt: {reader["CreatedAt"]}");
+                        Console.WriteLine($"SourceCode:\n{reader["SourceCode"]}");
                         Console.WriteLine($"CompileOutput:\n{reader["CompileOutput"]}");
                         Console.WriteLine($"RuntimeOutput:\n{reader["RuntimeOutput"]}");
                     }

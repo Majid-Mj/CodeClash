@@ -277,7 +277,8 @@ public class DockerExecutionService : IDockerExecutionService
                 MemoryUsedBytes = maxMemoryBytes,
                 PassedCount = passedCount,
                 TotalCount = testCases.Count,
-                TestCases = testCaseResults
+                TestCases = testCaseResults,
+                RuntimeOutput = testCaseResults.FirstOrDefault(r => !string.IsNullOrEmpty(r.Error))?.Error
             };
         }
         finally

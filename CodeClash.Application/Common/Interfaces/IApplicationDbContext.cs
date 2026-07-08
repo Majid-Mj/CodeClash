@@ -12,6 +12,7 @@ public interface IApplicationDbContext
     DbSet<Problem> Problems { get; }
     DbSet<TestCase> TestCases { get; }
     DbSet<Submission> Submissions { get; }
+    DbSet<BattleRecord> BattleRecords { get; }
     // ── Notifications ──────────────────────────────────────────────────────────
     DbSet<Notification> Notifications { get; }
     

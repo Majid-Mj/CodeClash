@@ -466,27 +466,22 @@ public class DockerExecutionService : IDockerExecutionService
             if (lang == "csharp" || lang == "c#")
             {
                 return sourceCode + "\n\n" + @"
-using System;
-using System.Text.RegularExpressions;
-using System.Linq;
-
 public class Driver {
     public static void Main() {
         string line = System.Console.ReadLine();
-        if (string.IsNullOrEmpty(line)) return;
+        if (System.String.IsNullOrEmpty(line)) return;
         
-        var numsMatch = Regex.Match(line, @""nums\s*=\s*\[([^\]]+)\]"");
-        var targetMatch = Regex.Match(line, @""target\s*=\s*(-?\d+)"");
+        System.Text.RegularExpressions.Match numsMatch = System.Text.RegularExpressions.Regex.Match(line, @""nums\s*=\s*\[([^\]]+)\]"");
+        System.Text.RegularExpressions.Match targetMatch = System.Text.RegularExpressions.Regex.Match(line, @""target\s*=\s*(-?\d+)"");
         
         if (!numsMatch.Success || !targetMatch.Success) return;
         
         int target = int.Parse(targetMatch.Groups[1].Value);
-        int[] nums = numsMatch.Groups[1].Value
-                              .Split(',')
-                              .Select(int.Parse)
-                              .ToArray();
+        string[] parts = numsMatch.Groups[1].Value.Split(',');
+        int[] nums = new int[parts.Length];
+        for (int i = 0; i < parts.Length; i++) nums[i] = int.Parse(parts[i].Trim());
                               
-        var res = new Solution().TwoSum(nums, target);
+        int[] res = new Solution().TwoSum(nums, target);
         System.Console.WriteLine($""[{res[0]},{res[1]}]"");
     }
 }";

@@ -46,6 +46,26 @@ public class SubmissionsController : ControllerBase
         return Ok(result.Data);
     }
 
+    // POST /api/v1/submissions/run
+    [HttpPost("run")]
+    [ProducesResponseType(typeof(SubmissionResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RunCode(
+        [FromBody] CreateSubmissionRequestDto dto,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        var result = await _mediator.Send(new CodeClash.Application.Features.Submissions.Commands.RunCode.RunCodeCommand(dto, userId), ct);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { message = result.Message, errors = result.Errors });
+        }
+
+        return Ok(result.Data);
+    }
+
     // GET /api/v1/submissions
     [HttpGet]
     [Authorize(Roles = "Admin")]

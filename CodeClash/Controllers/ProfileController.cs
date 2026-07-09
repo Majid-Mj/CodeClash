@@ -44,6 +44,22 @@ public class ProfileController : ControllerBase
         return Ok(result.Data);
     }
 
+    // GET /api/v1/profile/stats
+    [HttpGet("stats")]
+    [ProducesResponseType(typeof(ProfileStatsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProfileStats(CancellationToken ct)
+    {
+        Guid userId = User.GetUserId();
+        var result = await _mediator.Send(new CodeClash.Application.Features.Profile.Queries.GetProfileStats.GetProfileStatsQuery(userId), ct);
+
+        if (!result.IsSuccess)
+            return NotFound(new { message = result.Message, errors = result.Errors });
+
+        return Ok(result.Data);
+    }
+
     // PUT /api/v1/profile
     [HttpPut]
     [ProducesResponseType(typeof(ProfileDto), StatusCodes.Status200OK)]

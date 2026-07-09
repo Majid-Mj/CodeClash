@@ -14,6 +14,7 @@ public class User
     public string? PhoneNumber { get; private set; }
     public string? GithubId { get; private set; }
     public string? ProfileImageUrl { get; private set; }
+    public int TotalPoints { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
@@ -113,6 +114,12 @@ public class User
     public void Activate()
     {
         IsActive = true;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void AddPoints(int points)
+    {
+        TotalPoints += points;
         UpdatedAt = DateTime.UtcNow;
     }
 

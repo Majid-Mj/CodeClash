@@ -44,6 +44,7 @@ public class ProblemsController : ControllerBase
     {
         // Admins can see inactive problems; regular users / anonymous see active only
         bool isAdmin = User.IsInRole("Admin");
+        Guid? userId = User.Identity?.IsAuthenticated == true ? User.GetUserId() : null;
 
         var result = await _mediator.Send(new GetProblemsQuery(
             pageNumber,
@@ -51,7 +52,8 @@ public class ProblemsController : ControllerBase
             difficulty,
             category,
             search,
-            ActiveOnly: !isAdmin), ct);
+            ActiveOnly: !isAdmin,
+            UserId: userId), ct);
 
         if (!result.IsSuccess)
             return BadRequest(new { message = result.Message, errors = result.Errors });

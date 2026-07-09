@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Problem> Problems => Set<Problem>();
     public DbSet<TestCase> TestCases => Set<TestCase>();
     public DbSet<Submission> Submissions => Set<Submission>();
+    public DbSet<BattleRecord> BattleRecords => Set<BattleRecord>();
 
     // ── Notifications ──────────────────────────────────────────────────────────
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -36,6 +37,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
 
 
+    // ── Tournaments ───────────────────────────────────────────────────────────
+    public DbSet<Tournament> Tournaments => Set<Tournament>();
+    public DbSet<TournamentRegistration> TournamentRegistrations => Set<TournamentRegistration>();
+    public DbSet<TournamentMatch> TournamentMatches => Set<TournamentMatch>();
+    public DbSet<TournamentResult> TournamentResults => Set<TournamentResult>();
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

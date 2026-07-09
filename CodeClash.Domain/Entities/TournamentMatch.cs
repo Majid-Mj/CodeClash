@@ -58,6 +58,16 @@ public class TournamentMatch
         Status = MatchStatus.Completed;
         EndTime = DateTime.UtcNow;
     }
+
+    public void UpdatePlayer1(Guid playerId)
+    {
+        Player1Id = playerId;
+    }
+
+    public void UpdatePlayer2(Guid playerId)
+    {
+        Player2Id = playerId;
+    }
     
     public void FinishAsDraw()
     {

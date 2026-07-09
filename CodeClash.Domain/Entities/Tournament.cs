@@ -196,4 +196,63 @@ public class Tournament
         Status = TournamentStatus.Live;
         UpdatedAt = DateTime.UtcNow;
     }
+    
+    public void SubmitMatchResult(Guid matchId, Guid winnerId)
+    {
+        var match = _matches.FirstOrDefault(m => m.Id == matchId);
+        if (match == null)
+            throw new KeyNotFoundException("Match not found.");
+
+        if (match.Status == MatchStatus.Completed)
+            throw new InvalidOperationException("Match is already completed.");
+
+        if (match.Player1Id != winnerId && match.Player2Id != winnerId)
+            throw new InvalidOperationException("Winner must be one of the match players.");
+
+        match.Finish(winnerId);
+        UpdatedAt = DateTime.UtcNow;
+
+        if (match.Round == RoundType.Final)
+        {
+            Complete();
+            return;
+        }
+
+        // Advance to next round
+        var nextRound = match.Round switch
+        {
+            RoundType.QuarterFinal => RoundType.SemiFinal,
+            RoundType.SemiFinal => RoundType.Final,
+            _ => RoundType.Final
+        };
+
+        // Find the index of the current match within its round
+        var currentRoundMatches = _matches.Where(m => m.Round == match.Round).OrderBy(m => m.Id).ToList();
+        var matchIndex = currentRoundMatches.IndexOf(match);
+
+        // Find the next round match
+        var nextRoundMatches = _matches.Where(m => m.Round == nextRound).OrderBy(m => m.Id).ToList();
+        var nextMatchIndex = matchIndex / 2;
+        
+        if (nextMatchIndex < nextRoundMatches.Count)
+        {
+            var nextMatch = nextRoundMatches[nextMatchIndex];
+            
+            // Assign to Player1 or Player2 depending on if it's even or odd
+            if (matchIndex % 2 == 0)
+            {
+                // We need a method to set player1/2 in TournamentMatch if it doesn't exist, or just use reflection/field if not exposed.
+                // Wait, TournamentMatch doesn't have a public setter or method for updating players. 
+                // Let's add UpdatePlayers to TournamentMatch, but for now we can just assume we need to update it.
+                nextMatch.UpdatePlayer1(winnerId);
+            }
+            else
+            {
+                nextMatch.UpdatePlayer2(winnerId);
+            }
+            
+            // If the next match now has a Bye (one player is null, but wait, byes are resolved in round 1), 
+            // actually if we want to handle byes properly, if nextMatch gets a player but the other is null, we can't auto-win yet because the other might still be playing.
+        }
+    }
 }

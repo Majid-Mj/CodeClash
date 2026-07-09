@@ -113,10 +113,27 @@ public class TournamentsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/generate-bracket")]
-    // Since this controller has [Authorize(Roles = "Admin")], this method is automatically restricted to Admin.
     public async Task<IActionResult> GenerateBracket(Guid id)
     {
         var result = await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.GenerateBracket.GenerateBracketCommand(id));
         return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/matches")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetMatches(Guid id)
+    {
+        var result = await _mediator.Send(new CodeClash.Application.Features.Tournaments.Queries.GetTournamentMatches.GetTournamentMatchesQuery(id));
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/matches/{matchId:guid}/result")]
+    public async Task<IActionResult> SubmitMatchResult(Guid id, Guid matchId, [FromBody] CodeClash.Application.Features.Tournaments.Commands.SubmitMatchResult.SubmitMatchResultCommand command)
+    {
+        if (id != command.TournamentId || matchId != command.MatchId)
+            return BadRequest("ID mismatch");
+
+        await _mediator.Send(command);
+        return NoContent();
     }
 }

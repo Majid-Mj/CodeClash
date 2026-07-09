@@ -5,6 +5,8 @@ using CodeClash.Application.Features.Tournaments.Commands.PublishTournament;
 using CodeClash.Application.Features.Tournaments.Commands.UpdateTournament;
 using CodeClash.Application.Features.Tournaments.Queries.GetTournamentById;
 using CodeClash.Application.Features.Tournaments.Queries.GetTournaments;
+using CodeClash.Application.Features.Tournaments.Commands.RegisterUser;
+using CodeClash.Application.Features.Tournaments.Commands.UnregisterUser;
 using CodeClash.API.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;

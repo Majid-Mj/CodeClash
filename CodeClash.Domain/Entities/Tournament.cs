@@ -125,4 +125,75 @@ public class Tournament
         _registrations.Remove(registration);
         UpdatedAt = DateTime.UtcNow;
     }
+    
+    public void GenerateBracket()
+    {
+        if (Status == TournamentStatus.Live || Status == TournamentStatus.Completed || Status == TournamentStatus.Cancelled)
+            throw new InvalidOperationException($"Cannot generate bracket for tournament in status {Status}.");
+            
+        if (_registrations.Count < 2)
+            throw new InvalidOperationException("At least 2 participants are required to generate a bracket.");
+
+        _matches.Clear();
+        
+        var rand = new Random();
+        var players = _registrations.OrderBy(x => rand.Next()).ToList();
+        
+        int n = players.Count;
+        int powerOfTwo = 1;
+        while (powerOfTwo < n) powerOfTwo *= 2;
+        
+        int byes = powerOfTwo - n;
+        
+        // Generate QuarterFinals or first round
+        RoundType firstRound = powerOfTwo switch
+        {
+            2 => RoundType.Final,
+            4 => RoundType.SemiFinal,
+            _ => RoundType.QuarterFinal // Cap at QuarterFinals for now based on requirements, or can be dynamic
+        };
+
+        // Create first round matches
+        int matchCount = powerOfTwo / 2;
+        int playerIndex = 0;
+        
+        for (int i = 0; i < matchCount; i++)
+        {
+            var p1 = playerIndex < n ? players[playerIndex++].UserId : (Guid?)null;
+            var p2 = (byes > 0 && p1 != null) ? null : (playerIndex < n ? players[playerIndex++].UserId : (Guid?)null);
+            
+            if (p2 == null && p1 != null) byes--; // Used a bye
+
+            var match = TournamentMatch.Create(Id, firstRound, StartDate, p1, p2);
+            
+            // If it's a bye, auto complete
+            if (p1 != null && p2 == null)
+            {
+                match.Finish(p1.Value);
+            }
+            
+            _matches.Add(match);
+        }
+        
+        // Generate subsequent rounds as placeholders
+        RoundType currentRound = firstRound;
+        while (currentRound != RoundType.Final)
+        {
+            currentRound = currentRound switch
+            {
+                RoundType.QuarterFinal => RoundType.SemiFinal,
+                RoundType.SemiFinal => RoundType.Final,
+                _ => RoundType.Final
+            };
+            
+            matchCount /= 2;
+            for (int i = 0; i < matchCount; i++)
+            {
+                _matches.Add(TournamentMatch.Create(Id, currentRound, StartDate));
+            }
+        }
+        
+        Status = TournamentStatus.Live;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

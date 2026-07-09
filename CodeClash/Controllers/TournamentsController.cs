@@ -111,4 +111,12 @@ public class TournamentsController : ControllerBase
         var result = await _mediator.Send(new CodeClash.Application.Features.Tournaments.Queries.GetTournamentParticipants.GetTournamentParticipantsQuery(id));
         return Ok(result);
     }
+
+    [HttpPost("{id:guid}/generate-bracket")]
+    // Since this controller has [Authorize(Roles = "Admin")], this method is automatically restricted to Admin.
+    public async Task<IActionResult> GenerateBracket(Guid id)
+    {
+        var result = await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.GenerateBracket.GenerateBracketCommand(id));
+        return Ok(result);
+    }
 }

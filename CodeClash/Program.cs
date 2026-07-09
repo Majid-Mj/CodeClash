@@ -347,7 +347,7 @@ await db.Database.MigrateAsync();
         await db.SaveChangesAsync();
     }
 
-// ── 8. Middleware pipeline ────────────────────────────────────────────────────
+// ── 8. Middleware pipeline sd ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseStaticFiles();
 

@@ -146,4 +146,20 @@ public class TournamentsController : ControllerBase
         var result = await _mediator.Send(new CodeClash.Application.Features.Tournaments.Queries.GetTournamentResults.GetTournamentResultsQuery(id));
         return Ok(result);
     }
+
+    [HttpPost("{id:guid}/matches/{matchId:guid}/start")]
+    public async Task<IActionResult> StartMatch(Guid id, Guid matchId)
+    {
+        await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.StartMatch.StartMatchCommand(id, matchId));
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/matches/{matchId:guid}/submit")]
+    public async Task<IActionResult> SubmitMatchCode(Guid id, Guid matchId, [FromBody] CodeClash.Application.Features.Tournaments.Commands.SubmitTournamentCode.SubmitTournamentCodeRequest dto)
+    {
+        var userId = User.GetUserId();
+        var command = new CodeClash.Application.Features.Tournaments.Commands.SubmitTournamentCode.SubmitTournamentCodeCommand(id, matchId, userId, dto.Language, dto.SourceCode);
+        var result = await _mediator.Send(command);
+        return Ok(result);
+    }
 }

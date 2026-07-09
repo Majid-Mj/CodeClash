@@ -49,21 +49,61 @@ public class GetProblemsQueryHandler
         int totalCount = await query.CountAsync(ct);
 
         // ── Sort + paginate ───────────────────────────────────────────────────
-        var items = await query
+        var problemList = await query
             .OrderByDescending(p => p.CreatedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(p => new ProblemSummaryDto(
+            .Select(p => new {
                 p.Id,
                 p.Title,
                 p.Slug,
-                p.Difficulty.ToString(),
-                p.Category.ToString(),
+                Difficulty = p.Difficulty.ToString(),
+                Category = p.Category.ToString(),
                 p.IsActive,
                 p.TimeLimitMs,
                 p.MemoryLimitMb
-            ))
+            })
             .ToListAsync(ct);
+
+        var problemIds = problemList.Select(p => p.Id).ToList();
+        
+        var userStatuses = new Dictionary<Guid, string>();
+        if (request.UserId.HasValue && problemIds.Any())
+        {
+            var submissions = await _context.Submissions
+                .Where(s => s.UserId == request.UserId.Value && problemIds.Contains(s.ProblemId))
+                .Select(s => new { s.ProblemId, s.Status })
+                .ToListAsync(ct);
+
+            foreach (var pId in problemIds)
+            {
+                var pSubs = submissions.Where(s => s.ProblemId == pId).ToList();
+                if (pSubs.Any(s => s.Status == SubmissionStatus.Accepted))
+                {
+                    userStatuses[pId] = "Solved";
+                }
+                else if (pSubs.Any())
+                {
+                    userStatuses[pId] = "Attempted";
+                }
+                else
+                {
+                    userStatuses[pId] = "Unsolved";
+                }
+            }
+        }
+
+        var items = problemList.Select(p => new ProblemSummaryDto(
+            p.Id,
+            p.Title,
+            p.Slug,
+            p.Difficulty,
+            p.Category,
+            p.IsActive,
+            p.TimeLimitMs,
+            p.MemoryLimitMb,
+            request.UserId.HasValue && userStatuses.ContainsKey(p.Id) ? userStatuses[p.Id] : "Unsolved"
+        )).ToList();
 
         var paginated = new PaginatedList<ProblemSummaryDto>(
             items,

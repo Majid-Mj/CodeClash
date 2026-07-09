@@ -39,7 +39,7 @@ public class LeaderboardController : ControllerBase
     {
         var users = await _context.Users
             .AsNoTracking()
-            .Where(u => u.Role != CodeClash.Domain.Enums.UserRole.Admin && u.IsActive)
+            .Where(u => u.IsActive)
             .OrderByDescending(u => u.TotalPoints)
             .ThenBy(u => u.Username)
             .Take(100)

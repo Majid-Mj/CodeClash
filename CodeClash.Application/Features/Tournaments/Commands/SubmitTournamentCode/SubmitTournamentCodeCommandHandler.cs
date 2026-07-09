@@ -44,7 +44,7 @@ public class SubmitTournamentCodeCommandHandler : IRequestHandler<SubmitTourname
         var runResult = await _mediator.Send(runCommand, cancellationToken);
         if (!runResult.IsSuccess || runResult.Data == null)
         {
-            throw new Exception("Code execution failed: " + runResult.Error);
+            throw new Exception("Code execution failed: " + runResult.Message);
         }
 
         var submissionResponse = runResult.Data;

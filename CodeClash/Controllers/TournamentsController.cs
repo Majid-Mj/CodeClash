@@ -7,6 +7,7 @@ using CodeClash.Application.Features.Tournaments.Queries.GetTournamentById;
 using CodeClash.Application.Features.Tournaments.Queries.GetTournaments;
 using CodeClash.Application.Features.Tournaments.Commands.RegisterUser;
 using CodeClash.Application.Features.Tournaments.Commands.UnregisterUser;
+using CodeClash.Application.Features.Tournaments.Commands.SubmitTournamentCode;
 using CodeClash.API.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -155,10 +156,10 @@ public class TournamentsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/matches/{matchId:guid}/submit")]
-    public async Task<IActionResult> SubmitMatchCode(Guid id, Guid matchId, [FromBody] CodeClash.Application.Features.Tournaments.Commands.SubmitTournamentCode.SubmitTournamentCodeRequest dto)
+    public async Task<IActionResult> SubmitMatchCode(Guid id, Guid matchId, [FromBody] SubmitTournamentCodeRequest dto)
     {
         var userId = User.GetUserId();
-        var command = new CodeClash.Application.Features.Tournaments.Commands.SubmitTournamentCode.SubmitTournamentCodeCommand(id, matchId, userId, dto.Language, dto.SourceCode);
+        var command = new SubmitTournamentCodeCommand(id, matchId, userId, dto.Language, dto.SourceCode);
         var result = await _mediator.Send(command);
         return Ok(result);
     }

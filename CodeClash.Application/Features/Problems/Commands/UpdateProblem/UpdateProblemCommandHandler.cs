@@ -10,10 +10,12 @@ namespace CodeClash.Application.Features.Problems.Commands.UpdateProblem;
 public class UpdateProblemCommandHandler : IRequestHandler<UpdateProblemCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ISystemLoggingService _loggingService;
 
-    public UpdateProblemCommandHandler(IApplicationDbContext context)
+    public UpdateProblemCommandHandler(IApplicationDbContext context, ISystemLoggingService loggingService)
     {
         _context = context;
+        _loggingService = loggingService;
     }
 
     public async Task<Result<Guid>> Handle(UpdateProblemCommand request, CancellationToken ct)
@@ -73,6 +75,7 @@ public class UpdateProblemCommandHandler : IRequestHandler<UpdateProblemCommand,
 
         await _context.SaveChangesAsync(ct);
 
+        await _loggingService.LogInfoAsync("PROBLEM", $"Problem '{problem.Title}' (ID: {problem.Id}) updated successfully.", nameof(UpdateProblemCommandHandler), ct);
         return Result<Guid>.Success(problem.Id, "Problem updated successfully.");
     }
 }

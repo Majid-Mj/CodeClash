@@ -1,4 +1,4 @@
-﻿using CodeClash.Application.Common.Interfaces;
+using CodeClash.Application.Common.Interfaces;
 using CodeClash.Application.Common.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +10,13 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
     private readonly IApplicationDbContext _context;
     private readonly IJwtService _jwtService;
 
-    public LogoutCommandHandler(IApplicationDbContext context, IJwtService jwtService)
+    private readonly ISystemLoggingService _loggingService;
+
+    public LogoutCommandHandler(IApplicationDbContext context, IJwtService jwtService, ISystemLoggingService loggingService)
     {
         _context = context;
         _jwtService = jwtService;
+        _loggingService = loggingService;
     }
 
     public async Task<Result> Handle(LogoutCommand request, CancellationToken ct)
@@ -43,6 +46,7 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result>
         }
 
         await _context.SaveChangesAsync(ct);
+        await _loggingService.LogInfoAsync("AUTH", $"User '{request.UserId}' logged out successfully.", nameof(LogoutCommandHandler), ct);
         return Result.Success("Logged out successfully.");
     }
 }

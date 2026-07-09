@@ -20,6 +20,9 @@ public interface IApplicationDbContext
     DbSet<AIAnalysis> AIAnalyses { get; }
     DbSet<PromptHistory> PromptHistories { get; }
     DbSet<AIUsageLog> AIUsageLogs { get; }
+
+    // ── System Logs ──────────────────────────────────────────────────────────
+    DbSet<SystemLog> SystemLogs { get; }
     
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

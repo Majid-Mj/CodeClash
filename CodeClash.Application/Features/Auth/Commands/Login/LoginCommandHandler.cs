@@ -13,12 +13,14 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
     private readonly IApplicationDbContext _context;
     private readonly IJwtService _jwtService;
     private readonly IConfiguration _config;
+    private readonly ISystemLoggingService _loggingService;
 
-    public LoginCommandHandler(IApplicationDbContext context, IJwtService jwtService, IConfiguration config)
+    public LoginCommandHandler(IApplicationDbContext context, IJwtService jwtService, IConfiguration config, ISystemLoggingService loggingService)
     {
         _context = context;
         _jwtService = jwtService;
         _config = config;
+        _loggingService = loggingService;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(LoginCommand request, CancellationToken ct)
@@ -31,16 +33,25 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
             .FirstOrDefaultAsync(u => u.Email == identifier || u.Username == identifier, ct);
 
         if (user is null)
+        {
+            await _loggingService.LogWarningAsync("SECURITY", $"Failed login attempt for identifier '{identifier}'. User not found.", nameof(LoginCommandHandler), ct);
             return Result<AuthResponseDto>.Failure("Username or password incorrect.", "Username or password incorrect.");
+        }
 
         // 2 — Account guards
         if (!user.IsActive)
+        {
+            await _loggingService.LogWarningAsync("SECURITY", $"Deactivated user '{user.Username}' attempted to log in.", nameof(LoginCommandHandler), ct);
             return Result<AuthResponseDto>.Failure("the admin blocked the user please contect to admin");
+        }
 
         // 3 — Verify password
         bool passwordValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
         if (!passwordValid)
+        {
+            await _loggingService.LogWarningAsync("SECURITY", $"Failed login attempt for user '{user.Username}'. Incorrect password.", nameof(LoginCommandHandler), ct);
             return Result<AuthResponseDto>.Failure("Username or password incorrect.", "Username or password incorrect.");
+        }
 
         // 4 — Generate tokens
         string accessToken = _jwtService.GenerateAccessToken(user);
@@ -68,6 +79,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
             )
         );
 
+        await _loggingService.LogInfoAsync("AUTH", $"User '{user.Username}' logged in successfully.", nameof(LoginCommandHandler), ct);
         return Result<AuthResponseDto>.Success(response, "Login successful.");
     }
 }

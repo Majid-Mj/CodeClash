@@ -20,15 +20,18 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
     private readonly IApplicationDbContext _context;
     private readonly IDockerExecutionService _dockerService;
     private readonly ILogger<CreateSubmissionCommandHandler> _logger;
+    private readonly ISystemLoggingService _loggingService;
 
     public CreateSubmissionCommandHandler(
         IApplicationDbContext context,
         IDockerExecutionService dockerService,
-        ILogger<CreateSubmissionCommandHandler> logger)
+        ILogger<CreateSubmissionCommandHandler> logger,
+        ISystemLoggingService loggingService)
     {
         _context = context;
         _dockerService = dockerService;
         _logger = logger;
+        _loggingService = loggingService;
     }
 
     public async Task<Result<SubmissionResponseDto>> Handle(CreateSubmissionCommand request, CancellationToken ct)
@@ -78,6 +81,7 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
         await _context.SaveChangesAsync(ct);
 
         _logger.LogInformation("Submission {SubmissionId} created with status Pending.", submission.Id);
+        await _loggingService.LogInfoAsync("SUBMISSION", $"Submission '{submission.Id}' created for problem '{problem.Title}' in language '{submission.Language}'. Status: Pending.", nameof(CreateSubmissionCommandHandler), ct);
 
         // 5 — Load Test Cases
         var testCaseDtos = problem.TestCases

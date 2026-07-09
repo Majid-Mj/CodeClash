@@ -28,6 +28,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<PromptHistory> PromptHistories => Set<PromptHistory>();
     public DbSet<AIUsageLog> AIUsageLogs => Set<AIUsageLog>();
 
+    // ── System Logs ──────────────────────────────────────────────────────────
+    public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

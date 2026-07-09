@@ -8,10 +8,12 @@ namespace CodeClash.Application.Features.Problems.Commands.DeleteProblem;
 public class DeleteProblemCommandHandler : IRequestHandler<DeleteProblemCommand, Result>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ISystemLoggingService _loggingService;
 
-    public DeleteProblemCommandHandler(IApplicationDbContext context)
+    public DeleteProblemCommandHandler(IApplicationDbContext context, ISystemLoggingService loggingService)
     {
         _context = context;
+        _loggingService = loggingService;
     }
 
     public async Task<Result> Handle(DeleteProblemCommand request, CancellationToken ct)
@@ -36,6 +38,7 @@ public class DeleteProblemCommandHandler : IRequestHandler<DeleteProblemCommand,
 
         await _context.SaveChangesAsync(ct);
 
+        await _loggingService.LogInfoAsync("PROBLEM", $"Problem '{problem.Title}' (ID: {problem.Id}) soft-deleted successfully.", nameof(DeleteProblemCommandHandler), ct);
         return Result.Success("Problem deleted successfully.");
     }
 }

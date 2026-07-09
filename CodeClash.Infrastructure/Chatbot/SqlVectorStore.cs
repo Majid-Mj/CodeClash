@@ -99,3 +99,4 @@ public sealed class SqlVectorStore : IVectorStore
         return denom == 0 ? 0f : dot / denom;
     }
 }
+    

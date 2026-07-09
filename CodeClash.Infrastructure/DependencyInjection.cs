@@ -1,5 +1,4 @@
 using CodeClash.Application.Common.Interfaces;
-using CodeClash.Application.Features.Chatbot.Services;
 using CodeClash.Infrastructure.Chatbot;
 using CodeClash.Infrastructure.Persistence;
 using CodeClash.Infrastructure.Persistence.Repositories;
@@ -39,10 +38,6 @@ public static class DependencyInjection
         services.AddSingleton<ICompletionService, OpenAiCompletionService>();
 
         services.AddScoped<IVectorStore, SqlVectorStore>();
-
-        services.AddScoped<IRagChatbotService, RagChatbotService>();
-
-
 
         return services;
     }

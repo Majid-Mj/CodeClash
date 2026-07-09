@@ -1,4 +1,4 @@
-﻿using CodeClash.Application.Common.Interfaces;
+using CodeClash.Application.Common.Interfaces;
 using CodeClash.Application.Features.Chatbot.Dtos;
 using CodeClash.Domain.Entities;
 using CodeClash.Infrastructure.Persistence;
@@ -40,7 +40,6 @@ public sealed class ChatSessionRepository : IChatSessionRepository
 
     public async Task SaveAsync(ChatSession session, CancellationToken ct = default)
     {
-        _db.ChatSessions.Update(session);
         await _db.SaveChangesAsync(ct);
     }
 

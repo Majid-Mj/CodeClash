@@ -18,9 +18,18 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Problem> Problems => Set<Problem>();
     public DbSet<TestCase> TestCases => Set<TestCase>();
 
+    // ── RAG Chatbot ───────────────────────────────────────────────────────────────
+    public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
+
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         base.OnModelCreating(builder);
     }
+
+
+
 }

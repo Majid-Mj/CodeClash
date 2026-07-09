@@ -1,4 +1,6 @@
-﻿using CodeClash.Application.Common.Behaviours;
+using CodeClash.Application.Common.Behaviours;
+using CodeClash.Application.Common.Interfaces;
+using CodeClash.Application.Features.Chatbot.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +18,9 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
+
+        // RAG Chatbot orchestration
+        services.AddScoped<IRagChatbotService, RagChatbotService>();
 
         return services;
     }

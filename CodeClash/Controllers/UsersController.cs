@@ -22,11 +22,16 @@ public class UsersController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
     private readonly IHubContext<NotificationHub> _hubContext;
+    private readonly ISystemLoggingService _loggingService;
 
-    public UsersController(IApplicationDbContext context, IHubContext<NotificationHub> hubContext)
+    public UsersController(
+        IApplicationDbContext context, 
+        IHubContext<NotificationHub> hubContext,
+        ISystemLoggingService loggingService)
     {
         _context = context;
         _hubContext = hubContext;
+        _loggingService = loggingService;
     }
 
     public record UserManagementDto(
@@ -84,6 +89,7 @@ public class UsersController : ControllerBase
         // Prevent blocking admin accounts
         if (user.Role == UserRole.Admin)
         {
+            await _loggingService.LogWarningAsync("SECURITY", $"Denied attempt to suspend administrator account '{user.Username}'.", nameof(UsersController), ct);
             return BadRequest(new { message = "Action Denied: Administrator accounts cannot be suspended or deactivated." });
         }
 
@@ -98,6 +104,7 @@ public class UsersController : ControllerBase
         }
 
         await _context.SaveChangesAsync(ct);
+        await _loggingService.LogInfoAsync("USER_MANAGEMENT", $"User '{user.Username}' status updated to {(user.IsActive ? "Active" : "Suspended")}.", nameof(UsersController), ct);
         return Ok(new { message = $"User {user.Username} status updated to {(user.IsActive ? "Active" : "Suspended")} successfully." });
     }
 
@@ -148,6 +155,7 @@ public class UsersController : ControllerBase
             });
         }
 
+        await _loggingService.LogInfoAsync("SYSTEM", $"System notification pushed: '{dto.Title}' (Target: {(dto.UserId.HasValue ? $"User {dto.UserId.Value}" : "All Users")}).", nameof(UsersController), ct);
         return Ok(new { message = "System notification pushed successfully." });
     }
 }

@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IFileStorageService, FileStorageService>();
         services.AddScoped<IDockerExecutionService, DockerExecutionService>();
+        services.AddScoped<ISystemLoggingService, SystemLoggingService>();
         
         services.AddHttpClient<IAIProvider, CodeClash.Infrastructure.Services.AI.GeminiProvider>();
 

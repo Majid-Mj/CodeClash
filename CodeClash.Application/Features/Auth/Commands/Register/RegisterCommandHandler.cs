@@ -14,15 +14,19 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<st
     private readonly IEmailService _emailService;
     private readonly IConfiguration _config;
 
+    private readonly ISystemLoggingService _loggingService;
+
     // IConfiguration injected to read the frontend base URL for the verification link
     public RegisterCommandHandler(
         IApplicationDbContext context,
         IEmailService emailService,
-        IConfiguration config)
+        IConfiguration config,
+        ISystemLoggingService loggingService)
     {
         _context = context;
         _emailService = emailService;
         _config = config;
+        _loggingService = loggingService;
     }
 
     public async Task<Result<string>> Handle(RegisterCommand request, CancellationToken ct)
@@ -55,6 +59,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<st
         await _context.Users.AddAsync(user, ct);
         await _context.SaveChangesAsync(ct);
 
+        await _loggingService.LogInfoAsync("AUTH", $"User '{user.Username}' registered successfully.", nameof(RegisterCommandHandler), ct);
         return Result<string>.Success(
             user.Id.ToString(),
             "Account created successfully.");

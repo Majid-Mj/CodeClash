@@ -19,10 +19,12 @@ public class DockerExecutionService : IDockerExecutionService
 {
     private readonly ILogger<DockerExecutionService> _logger;
     private readonly DockerClient _dockerClient;
+    private readonly ISystemLoggingService _loggingService;
 
-    public DockerExecutionService(ILogger<DockerExecutionService> logger, IConfiguration config)
+    public DockerExecutionService(ILogger<DockerExecutionService> logger, IConfiguration config, ISystemLoggingService loggingService)
     {
         _logger = logger;
+        _loggingService = loggingService;
 
         // Read custom Docker Host URI from configuration, or fallback to platform defaults
         var dockerUri = config["Docker:HostUri"];
@@ -85,6 +87,7 @@ public class DockerExecutionService : IDockerExecutionService
             // Start container
             await _dockerClient.Containers.StartContainerAsync(containerId, null, ct);
             _logger.LogInformation("Container created and started: {ContainerId}.", containerId);
+            await _loggingService.LogInfoAsync("SANDBOX", $"Test execution server spun up: Sandbox Node {containerId.Substring(0, 8)}.", nameof(DockerExecutionService), ct);
 
             // 2 — Set up files inside /app directory
             // We run as root first to create directory and copy files
@@ -128,6 +131,7 @@ public class DockerExecutionService : IDockerExecutionService
                 if (cExitCode != 0)
                 {
                     compileStderr = string.IsNullOrEmpty(cStderr) ? cStdout : cStderr;
+                    await _loggingService.LogWarningAsync("SANDBOX", $"Sandbox compilation failed inside container {containerId.Substring(0, 8)}.", nameof(DockerExecutionService), ct);
                     return new ExecutionResult
                     {
                         Status = SubmissionStatus.CompilationError,
@@ -270,11 +274,20 @@ public class DockerExecutionService : IDockerExecutionService
 
             _logger.LogInformation("Final verdict: {Verdict}. Passed {Passed}/{Total} test cases.", finalStatus, passedCount, testCases.Count);
 
+            if (finalStatus == SubmissionStatus.MemoryLimitExceeded)
+            {
+                await _loggingService.LogWarningAsync("SANDBOX", $"Memory spike detected on Sandbox Node {containerId.Substring(0, 8)} (exceeded {memoryLimitMb}MB).", nameof(DockerExecutionService), ct);
+            }
+            else
+            {
+                await _loggingService.LogInfoAsync("SANDBOX", $"Sandbox execution completed for language '{language}'. Verdict: {finalStatus}. Passed {passedCount}/{testCases.Count} test cases.", nameof(DockerExecutionService), ct);
+            }
+
             return new ExecutionResult
             {
                 Status = finalStatus,
-                ExecutionTimeMs = executionTimeMs,
                 MemoryUsedBytes = maxMemoryBytes,
+                ExecutionTimeMs = executionTimeMs,
                 PassedCount = passedCount,
                 TotalCount = testCases.Count,
                 TestCases = testCaseResults,

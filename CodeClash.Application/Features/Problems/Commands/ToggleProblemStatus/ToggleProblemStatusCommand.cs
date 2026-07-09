@@ -10,10 +10,12 @@ public record ToggleProblemStatusCommand(Guid ProblemId) : IRequest<Result<bool>
 public class ToggleProblemStatusCommandHandler : IRequestHandler<ToggleProblemStatusCommand, Result<bool>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ISystemLoggingService _loggingService;
 
-    public ToggleProblemStatusCommandHandler(IApplicationDbContext context)
+    public ToggleProblemStatusCommandHandler(IApplicationDbContext context, ISystemLoggingService loggingService)
     {
         _context = context;
+        _loggingService = loggingService;
     }
 
     public async Task<Result<bool>> Handle(ToggleProblemStatusCommand request, CancellationToken ct)
@@ -31,6 +33,7 @@ public class ToggleProblemStatusCommandHandler : IRequestHandler<ToggleProblemSt
 
         await _context.SaveChangesAsync(ct);
 
+        await _loggingService.LogInfoAsync("PROBLEM", $"Problem '{problem.Title}' (ID: {problem.Id}) status toggled to {(problem.IsActive ? "Active" : "Inactive")}.", nameof(ToggleProblemStatusCommandHandler), ct);
         return Result<bool>.Success(problem.IsActive, "Problem status toggled successfully.");
     }
 }

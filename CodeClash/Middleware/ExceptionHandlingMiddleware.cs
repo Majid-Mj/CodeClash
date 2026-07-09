@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using CodeClash.Application.Common.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CodeClash.API.Middleware;
 
@@ -56,6 +58,25 @@ public class ExceptionHandlingMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception occurred");
+
+            try
+            {
+                var loggingService = context.RequestServices.GetService<ISystemLoggingService>();
+                if (loggingService != null)
+                {
+                    var isDbError = ex.GetType().FullName?.Contains("EntityFrameworkCore") == true || 
+                                    ex.GetType().Name.Contains("Sql") || 
+                                    ex.InnerException?.GetType().Name.Contains("Sql") == true;
+                    
+                    var category = isDbError ? "DATABASE" : "SYSTEM";
+                    await loggingService.LogErrorAsync(category, "Global exception handler caught unhandled exception.", nameof(ExceptionHandlingMiddleware), ex);
+                }
+            }
+            catch (Exception logEx)
+            {
+                _logger.LogError(logEx, "Failed to write unhandled exception to system log database");
+            }
+
             var problem = new ProblemDetails
             {
                 Status = (int)HttpStatusCode.InternalServerError,

@@ -17,6 +17,18 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // ── Problems (new) ────────────────────────────────────────────────────────
     public DbSet<Problem> Problems => Set<Problem>();
     public DbSet<TestCase> TestCases => Set<TestCase>();
+    public DbSet<Submission> Submissions => Set<Submission>();
+
+    // ── Notifications ──────────────────────────────────────────────────────────
+    public DbSet<Notification> Notifications => Set<Notification>();
+
+    // ── AI ────────────────────────────────────────────────────────────────────
+    public DbSet<AIAnalysis> AIAnalyses => Set<AIAnalysis>();
+    public DbSet<PromptHistory> PromptHistories => Set<PromptHistory>();
+    public DbSet<AIUsageLog> AIUsageLogs => Set<AIUsageLog>();
+
+    // ── System Logs ──────────────────────────────────────────────────────────
+    public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
 
     // ── RAG Chatbot ───────────────────────────────────────────────────────────────
     public DbSet<ChatSession> ChatSessions => Set<ChatSession>();

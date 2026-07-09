@@ -11,5 +11,17 @@ public interface IApplicationDbContext
     // ── Problems (new) ────────────────────────────────────────────────────────
     DbSet<Problem> Problems { get; }
     DbSet<TestCase> TestCases { get; }
+    DbSet<Submission> Submissions { get; }
+    // ── Notifications ──────────────────────────────────────────────────────────
+    DbSet<Notification> Notifications { get; }
+    
+    // ── AI ────────────────────────────────────────────────────────────────────
+    DbSet<AIAnalysis> AIAnalyses { get; }
+    DbSet<PromptHistory> PromptHistories { get; }
+    DbSet<AIUsageLog> AIUsageLogs { get; }
+
+    // ── System Logs ──────────────────────────────────────────────────────────
+    DbSet<SystemLog> SystemLogs { get; }
+    
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -22,6 +22,10 @@ public static class DependencyInjection
         // RAG Chatbot orchestration
         services.AddScoped<IRagChatbotService, RagChatbotService>();
 
+        // AI Analysis
+        services.AddSingleton<CodeClash.Application.Features.AIAnalysis.Services.PromptBuilder>();
+        services.AddSingleton<CodeClash.Application.Features.AIAnalysis.Services.JsonParser>();
+
         return services;
     }
 }

@@ -31,6 +31,10 @@ public static class DependencyInjection
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IFileStorageService, FileStorageService>();
+        services.AddScoped<IDockerExecutionService, DockerExecutionService>();
+        services.AddScoped<ISystemLoggingService, SystemLoggingService>();
+        
+        services.AddHttpClient<IAIProvider, CodeClash.Infrastructure.Services.AI.GeminiProvider>();
 
         services.AddScoped<IProblemContextRepository, ProblemContextRepository>();
         services.AddScoped<IChatSessionRepository, ChatSessionRepository>();

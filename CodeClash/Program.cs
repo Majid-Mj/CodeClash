@@ -19,11 +19,9 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── 1. Clean Architecture layers ─────────────────────────────────────────────
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// ── Data Protection Key Persistence ───────────────────────────────────────────
 var homePath = Environment.GetEnvironmentVariable("HOME");
 var dpFolder = !string.IsNullOrEmpty(homePath)
     ? Path.Combine(homePath, "ASP.NET", "DataProtection-Keys")
@@ -36,12 +34,11 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dpFolder))
     .SetApplicationName("CodeClash");
 
-// ── 2. JWT Authentication ─────────────────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"]
     ?? throw new InvalidOperationException("JwtSettings:SecretKey is not configured.");
 
-builder.Services.AddAuthentication(options =>
+var authBuilder = builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -78,7 +75,7 @@ builder.Services.AddAuthentication(options =>
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             context.Response.ContentType = "application/json";
 
-            var response = CodeClash.API.Common.ApiResponse<object>.Fail("You are not authorized to access this resource.", "Unauthorized");
+            var response = new { message = "You are not authorized to access this resource.", title = "Unauthorized" };
             var json = System.Text.Json.JsonSerializer.Serialize(response, new System.Text.Json.JsonSerializerOptions
             {
                 PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
@@ -90,7 +87,7 @@ builder.Services.AddAuthentication(options =>
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";
 
-            var response = CodeClash.API.Common.ApiResponse<object>.Fail("You do not have permission to access this resource.", "Forbidden");
+            var response = new { message = "You do not have permission to access this resource.", title = "Forbidden" };
             var json = System.Text.Json.JsonSerializer.Serialize(response, new System.Text.Json.JsonSerializerOptions
             {
                 PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
@@ -99,22 +96,27 @@ builder.Services.AddAuthentication(options =>
         }
     };
 })
-.AddCookie()
-.AddGitHub(options =>
+.AddCookie();
+
+if (!string.IsNullOrEmpty(builder.Configuration["GitHub:ClientId"]) &&
+    !string.IsNullOrEmpty(builder.Configuration["GitHub:ClientSecret"]))
 {
-    options.ClientId = builder.Configuration["GitHub:ClientId"]!;
-    options.ClientSecret = builder.Configuration["GitHub:ClientSecret"]!;
-    options.Scope.Add("user:email");
-    options.CallbackPath = "/api/v1/auth/github-callback";
-    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    
-    // Enforce secure cookie policies for Azure/reverse proxy compatibility
-    options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.CorrelationCookie.SameSite = SameSiteMode.Lax;
-    options.CorrelationCookie.HttpOnly = true;
-    options.CorrelationCookie.Path = "/";
-    options.CorrelationCookie.IsEssential = true;
-});
+    authBuilder.AddGitHub(options =>
+    {
+        options.ClientId = builder.Configuration["GitHub:ClientId"]!;
+        options.ClientSecret = builder.Configuration["GitHub:ClientSecret"]!;
+        options.Scope.Add("user:email");
+        options.CallbackPath = "/api/v1/auth/github-callback";
+        options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        
+        // Enforce secure cookie policies for Azure/reverse proxy compatibility
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.CorrelationCookie.HttpOnly = true;
+        options.CorrelationCookie.Path = "/";
+        options.CorrelationCookie.IsEssential = true;
+    });
+}
 
 
 builder.Services.AddAuthorization(options =>
@@ -127,7 +129,6 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 
-// ── 3. Rate Limiting ──────────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -137,7 +138,7 @@ builder.Services.AddRateLimiter(options =>
         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         context.HttpContext.Response.ContentType = "application/json";
 
-        var response = CodeClash.API.Common.ApiResponse<object>.Fail("Too many requests. Please try again later.", "Rate limit exceeded");
+        var response = new { message = "Too many requests. Please try again later.", title = "Rate limit exceeded" };
         var json = System.Text.Json.JsonSerializer.Serialize(response, new System.Text.Json.JsonSerializerOptions
         {
             PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
@@ -168,7 +169,6 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// ── 4. CORS (Angular dev server) ──────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
@@ -178,7 +178,6 @@ builder.Services.AddCors(options =>
         .AllowCredentials());
 });
 
-// ── 5. Controllers & JSON ─────────────────────────────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -195,12 +194,11 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
             .Select(e => e.ErrorMessage)
             .ToList();
 
-        var response = CodeClash.API.Common.ApiResponse<object>.Fail(errors, "Validation failed");
+        var response = new { message = "Validation failed", errors = errors };
         return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(response);
     };
 });
 
-// ── 6. Swagger / OpenAPI ──────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -208,7 +206,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "CodeClash API",
         Version = "v1",
-        Description = "Real-Time Coding Battle Platform — Authentication Endpoints"
+        Description = "Real-Time Coding Battle Platform â€” Authentication Endpoints"
     });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -243,7 +241,6 @@ builder.Services.AddSwaggerGen(options =>
         options.IncludeXmlComments(xmlPath);
 });
 
-// ── Rate Limiting for OTP/Auth endpoints ──────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -255,19 +252,25 @@ builder.Services.AddRateLimiter(options =>
         limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         limiterOptions.QueueLimit = 0;
     });
+
+    options.AddFixedWindowLimiter("AiAnalysisPolicy", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 5;
+        limiterOptions.Window = TimeSpan.FromMinutes(10);
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 0;
+    });
 });
 
-// ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// ── SMTP Configuration Validation ─────────────────────────────────────────────
 var smtpSection = app.Configuration.GetSection("SmtpSettings");
 var smtpUsername = smtpSection["Username"];
 var smtpPassword = smtpSection["Password"];
 if (string.IsNullOrEmpty(smtpUsername) || smtpUsername.Contains("your-email") ||
     string.IsNullOrEmpty(smtpPassword) || smtpPassword.Contains("your-app-password"))
 {
-    app.Logger.LogWarning("⚠️  SMTP credentials are not configured. Email features (OTP, verification) will fail at runtime. " +
+    app.Logger.LogWarning("âš ï¸  SMTP credentials are not configured. Email features (OTP, verification) will fail at runtime. " +
         "Set SmtpSettings__Username and SmtpSettings__Password environment variables.");
 }
 
@@ -280,7 +283,6 @@ forwardedOptions.KnownNetworks.Clear();
 forwardedOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedOptions);
 
-// ── 7. Auto-migrate on startup (ensures Azure DB is migrated) ─────────────────
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -347,7 +349,73 @@ await db.Database.MigrateAsync();
         await db.SaveChangesAsync();
     }
 
-// ── 8. Middleware pipeline sd ────────────────────────────────────────────────────
+    // Seed Problems
+    if (!await db.Problems.AnyAsync())
+    {
+        var adminUserId = adminUser.Id;
+        var allowedLangs = "[\"c\", \"cpp\", \"java\", \"csharp\", \"python\", \"javascript\", \"go\", \"rust\"]";
+        
+        // 1. Two Sum
+        var twoSum = CodeClash.Domain.Entities.Problem.Create(
+            "Two Sum",
+            CodeClash.Domain.Enums.Difficulty.Easy,
+            CodeClash.Domain.Enums.ProblemCategory.Arrays,
+            "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.\n\n### Input Format:\n- First line contains the `target` integer.\n- Second line contains space-separated integers representing `nums` array.\n\n### Output Format:\n- Output the two indices separated by a space.",
+            "[\"2 <= nums.length <= 10^4\", \"-10^9 <= nums[i] <= 10^9\", \"-10^9 <= target <= 10^9\"]",
+            allowedLangs,
+            2000,
+            256,
+            adminUserId
+        );
+        twoSum.AddTestCase("9\n2 7 11 15", "0 1", false);
+        twoSum.AddTestCase("6\n3 2 4", "1 2", false);
+        twoSum.AddTestCase("6\n3 3", "0 1", true);
+        twoSum.Activate();
+        await db.Problems.AddAsync(twoSum);
+
+        // 2. Palindrome Number
+        var palindromeNum = CodeClash.Domain.Entities.Problem.Create(
+            "Palindrome Number",
+            CodeClash.Domain.Enums.Difficulty.Easy,
+            CodeClash.Domain.Enums.ProblemCategory.Math,
+            "Given an integer `x`, return `true` if `x` is a palindrome, and `false` otherwise.\n\n### Input Format:\n- A single line containing the integer `x`.\n\n### Output Format:\n- Output `true` or `false`.",
+            "[\"-2^31 <= x <= 2^31 - 1\"]",
+            allowedLangs,
+            2000,
+            256,
+            adminUserId
+        );
+        palindromeNum.AddTestCase("121", "true", false);
+        palindromeNum.AddTestCase("-121", "false", false);
+        palindromeNum.AddTestCase("10", "false", true);
+        palindromeNum.Activate();
+        await db.Problems.AddAsync(palindromeNum);
+
+        // 3. Valid Parentheses
+        var validParentheses = CodeClash.Domain.Entities.Problem.Create(
+            "Valid Parentheses",
+            CodeClash.Domain.Enums.Difficulty.Easy,
+            CodeClash.Domain.Enums.ProblemCategory.Strings,
+            "Given a string `s` containing just the characters `(`, `)`, `{`, `}`, `[` and `]`, determine if the input string is valid.\n\nAn input string is valid if:\n1. Open brackets must be closed by the same type of brackets.\n2. Open brackets must be closed in the correct order.\n3. Every close bracket has a corresponding open bracket of the same type.\n\n### Input Format:\n- A single line containing the string `s`.\n\n### Output Format:\n- Output `true` or `false`.",
+            "[\"1 <= s.length <= 10^4\", \"s consists of parentheses only '()[]{}'\"]",
+            allowedLangs,
+            2000,
+            256,
+            adminUserId
+        );
+        validParentheses.AddTestCase("()", "true", false);
+        validParentheses.AddTestCase("()[]{}", "true", false);
+        validParentheses.AddTestCase("(]", "false", false);
+        validParentheses.AddTestCase("([)]", "false", true);
+        validParentheses.AddTestCase("{[]}", "true", true);
+        validParentheses.Activate();
+        await db.Problems.AddAsync(validParentheses);
+
+        await db.SaveChangesAsync();
+    }
+}
+
+// ── 8. Middleware pipeline ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseStaticFiles();
 

@@ -1,4 +1,3 @@
-using CodeClash.API.Common;
 using CodeClash.Application.Common.Interfaces;
 using CodeClash.Domain.Entities;
 using CodeClash.Domain.Enums;
@@ -22,10 +21,17 @@ namespace CodeClash.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
+    private readonly IHubContext<NotificationHub> _hubContext;
+    private readonly ISystemLoggingService _loggingService;
 
-    public UsersController(IApplicationDbContext context)
+    public UsersController(
+        IApplicationDbContext context, 
+        IHubContext<NotificationHub> hubContext,
+        ISystemLoggingService loggingService)
     {
         _context = context;
+        _hubContext = hubContext;
+        _loggingService = loggingService;
     }
 
     public record UserManagementDto(
@@ -38,15 +44,9 @@ public class UsersController : ControllerBase
         string JoinDate
     );
 
-    // ─────────────────────────────────────────────────────────────
     // GET /api/v1/admin/users
-    // ─────────────────────────────────────────────────────────────
-    /// <summary>Returns list of all users in the system for administrative management.</summary>
-    /// <response code="200">Users retrieved successfully</response>
-    /// <response code="401">Unauthorized</response>
-    /// <response code="403">Forbidden (Admins only)</response>
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<UserManagementDto[]>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(UserManagementDto[]), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUsers(CancellationToken ct)
     {
         var users = await _context.Users
@@ -66,43 +66,37 @@ public class UsersController : ControllerBase
                 Elo: elo,
                 Role: user.Role.ToString(),
                 Status: user.IsActive ? "Active" : "Suspended",
-                JoinDate: user.CreatedAt.ToString("yyyy-MM-dd")
+                JoinDate: user.CreatedAt.ToString("MMM dd, yyyy")
             );
         }).ToArray();
 
-        return Ok(ApiResponse<UserManagementDto[]>.Ok(dtos, "System users retrieved successfully."));
+        return Ok(dtos);
     }
 
-    // ─────────────────────────────────────────────────────────────
     // PUT /api/v1/admin/users/{userId}/toggle-status
-    // ─────────────────────────────────────────────────────────────
-    /// <summary>Suspends or activates a user account. Admins cannot block other admins.</summary>
-    /// <response code="200">User status toggled successfully</response>
-    /// <response code="400">User is an admin (cannot block admin) or invalid ID</response>
-    /// <response code="401">Unauthorized</response>
-    /// <response code="403">Forbidden (Admins only)</response>
-    /// <response code="404">User not found</response>
     [HttpPut("{userId:guid}/toggle-status")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ToggleUserStatus(Guid userId, CancellationToken ct)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user == null)
         {
-            return NotFound(ApiResponse<object>.Fail("User not found.", "UserNotFound"));
+            return NotFound(new { message = "User not found." });
         }
 
         // Prevent blocking admin accounts
         if (user.Role == UserRole.Admin)
         {
-            return BadRequest(ApiResponse<object>.Fail("Action Denied: Administrator accounts cannot be suspended or deactivated.", "AdminBlockForbidden"));
+            await _loggingService.LogWarningAsync("SECURITY", $"Denied attempt to suspend administrator account '{user.Username}'.", nameof(UsersController), ct);
+            return BadRequest(new { message = "Action Denied: Administrator accounts cannot be suspended or deactivated." });
         }
 
         if (user.IsActive)
         {
             user.Deactivate();
+            await _hubContext.Clients.User(userId.ToString()).SendAsync("ForceLogout", ct);
         }
         else
         {
@@ -110,22 +104,15 @@ public class UsersController : ControllerBase
         }
 
         await _context.SaveChangesAsync(ct);
-        return Ok(ApiResponse<object>.Ok(null, $"User {user.Username} status updated to {(user.IsActive ? "Active" : "Suspended")} successfully."));
+        await _loggingService.LogInfoAsync("USER_MANAGEMENT", $"User '{user.Username}' status updated to {(user.IsActive ? "Active" : "Suspended")}.", nameof(UsersController), ct);
+        return Ok(new { message = $"User {user.Username} status updated to {(user.IsActive ? "Active" : "Suspended")} successfully." });
     }
 
-    // ─────────────────────────────────────────────────────────────
     // POST /api/v1/admin/users/notify
-    // ─────────────────────────────────────────────────────────────
-    /// <summary>Sends a real-time SignalR notification to a specific user, or broadcasts to all users if UserId is empty.</summary>
-    /// <response code="200">Notification sent successfully</response>
-    /// <response code="400">Missing fields or validation error</response>
-    /// <response code="401">Unauthorized</response>
-    /// <response code="403">Forbidden (Admins only)</response>
-    /// <response code="404">Recipient user not found</response>
     [HttpPost("notify")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SendNotification(
         [FromBody] SendNotificationDto dto,
         [FromServices] IHubContext<NotificationHub> hubContext,
@@ -133,18 +120,16 @@ public class UsersController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.Message))
         {
-            return BadRequest(ApiResponse<object>.Fail("Title and Message are required.", "ValidationFailed"));
+            return BadRequest(new { message = "Title and Message are required." });
         }
 
         string type = dto.Type?.ToLower() ?? "info";
 
         if (dto.UserId.HasValue)
         {
-            var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == dto.UserId.Value, ct);
-            if (user == null)
-            {
-                return NotFound(ApiResponse<object>.Fail("Recipient user not found.", "UserNotFound"));
-            }
+            var notif = new Notification(dto.UserId.Value, dto.Title.Trim(), dto.Message.Trim(), type);
+            _context.Notifications.Add(notif);
+            await _context.SaveChangesAsync(ct);
 
             await hubContext.Clients.User(dto.UserId.Value.ToString()).SendAsync("ReceiveNotification", new
             {
@@ -155,6 +140,13 @@ public class UsersController : ControllerBase
         }
         else
         {
+            // For global notifications, we will broadcast via SignalR. 
+            // We'll also fetch all user IDs and persist a notification for each so it stays in their history.
+            var allUserIds = await _context.Users.Select(u => u.Id).ToListAsync(ct);
+            var notifications = allUserIds.Select(id => new Notification(id, dto.Title.Trim(), dto.Message.Trim(), type));
+            _context.Notifications.AddRange(notifications);
+            await _context.SaveChangesAsync(ct);
+
             await hubContext.Clients.All.SendAsync("ReceiveNotification", new
             {
                 title = dto.Title.Trim(),
@@ -163,7 +155,8 @@ public class UsersController : ControllerBase
             });
         }
 
-        return Ok(ApiResponse<object>.Ok(null, "System notification pushed successfully."));
+        await _loggingService.LogInfoAsync("SYSTEM", $"System notification pushed: '{dto.Title}' (Target: {(dto.UserId.HasValue ? $"User {dto.UserId.Value}" : "All Users")}).", nameof(UsersController), ct);
+        return Ok(new { message = "System notification pushed successfully." });
     }
 }
 

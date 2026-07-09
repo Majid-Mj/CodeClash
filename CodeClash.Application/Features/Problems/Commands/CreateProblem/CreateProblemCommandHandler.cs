@@ -11,10 +11,12 @@ namespace CodeClash.Application.Features.Problems.Commands.CreateProblem;
 public class CreateProblemCommandHandler : IRequestHandler<CreateProblemCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ISystemLoggingService _loggingService;
 
-    public CreateProblemCommandHandler(IApplicationDbContext context)
+    public CreateProblemCommandHandler(IApplicationDbContext context, ISystemLoggingService loggingService)
     {
         _context = context;
+        _loggingService = loggingService;
     }
 
     public async Task<Result<Guid>> Handle(CreateProblemCommand request, CancellationToken ct)
@@ -57,6 +59,7 @@ public class CreateProblemCommandHandler : IRequestHandler<CreateProblemCommand,
         await _context.Problems.AddAsync(problem, ct);
         await _context.SaveChangesAsync(ct);
 
+        await _loggingService.LogInfoAsync("PROBLEM", $"Problem '{problem.Title}' (ID: {problem.Id}) created successfully.", nameof(CreateProblemCommandHandler), ct);
         return Result<Guid>.Success(problem.Id, "Problem created successfully.");
     }
 }

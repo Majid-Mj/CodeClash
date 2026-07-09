@@ -27,6 +27,7 @@ public class User
 
     // Navigation
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
+    public ICollection<Notification> Notifications { get; private set; } = new List<Notification>();
 
     // EF constructor
     private User() { }

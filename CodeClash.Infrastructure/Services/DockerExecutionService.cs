@@ -850,7 +850,10 @@ int main() {
         {
             if (lang == "csharp" || lang == "c#")
             {
-                var treeNodeDef = sourceCode.Contains("class TreeNode") ? "" : @"
+                return sourceCode + "\n\n" + @"
+using System;
+using System.Collections.Generic;
+
 public class TreeNode {
     public int val;
     public TreeNode left;
@@ -860,11 +863,7 @@ public class TreeNode {
         this.left = left;
         this.right = right;
     }
-}";
-                return sourceCode + "\n\n" + @"
-using System;
-using System.Collections.Generic;
-" + treeNodeDef + @"
+}
 
 public class Driver {
     public static TreeNode Deserialize(string data) {
@@ -933,17 +932,16 @@ public class Driver {
             }
             if (lang == "python" || lang == "python3" || lang == "py")
             {
-                var treeNodeDef = sourceCode.Contains("class TreeNode") ? "" : @"
+                return sourceCode + "\n\n" + @"
+import sys
+from collections import deque
+
 class TreeNode:
     def __init__(self, val=0, left=None, right=None):
         self.val = val
         self.left = left
         self.right = right
-";
-                return sourceCode + "\n\n" + @"
-import sys
-from collections import deque
-" + treeNodeDef + @"
+
 def deserialize(data):
     data = data.strip()
     if data.startswith('[') and data.endswith(']'):
@@ -1000,16 +998,15 @@ if line:
             }
             if (lang == "javascript" || lang == "js")
             {
-                var treeNodeDef = sourceCode.Contains("class TreeNode") || sourceCode.Contains("function TreeNode") ? "" : @"
+                return sourceCode + "\n\n" + @"
+const fs = require('fs');
+
 function TreeNode(val, left, right) {
     this.val = (val===undefined ? 0 : val)
     this.left = (left===undefined ? null : left)
     this.right = (right===undefined ? null : right)
 }
-";
-                return sourceCode + "\n\n" + @"
-const fs = require('fs');
-" + treeNodeDef + @"
+
 function deserialize(data) {
     data = data.trim();
     if (data.startsWith('[') && data.endsWith(']')) {
@@ -1078,7 +1075,9 @@ if (input) {
             if (lang == "java")
             {
                 var modified = sourceCode.Replace("public class Solution", "class Solution");
-                var treeNodeDef = sourceCode.Contains("class TreeNode") ? "" : @"
+                return modified + "\n\n" + @"
+import java.util.*;
+
 class TreeNode {
     int val;
     TreeNode left;
@@ -1091,10 +1090,7 @@ class TreeNode {
         this.right = right;
     }
 }
-";
-                return modified + "\n\n" + @"
-import java.util.*;
-" + treeNodeDef + @"
+
 public class Main {
     public static TreeNode deserialize(String data) {
         data = data.trim();
@@ -1168,16 +1164,6 @@ public class Main {
             }
             if (lang == "cpp" || lang == "c++")
             {
-                var treeNodeDef = sourceCode.Contains("struct TreeNode") || sourceCode.Contains("class TreeNode") ? "" : @"
-struct TreeNode {
-    int val;
-    TreeNode *left;
-    TreeNode *right;
-    TreeNode() : val(0), left(nullptr), right(nullptr) {}
-    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
-    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
-};
-";
                 return sourceCode + "\n\n" + @"
 #include <iostream>
 #include <string>
@@ -1187,7 +1173,16 @@ struct TreeNode {
 #include <algorithm>
 
 using namespace std;
-" + treeNodeDef + @"
+
+struct TreeNode {
+    int val;
+    TreeNode *left;
+    TreeNode *right;
+    TreeNode() : val(0), left(nullptr), right(nullptr) {}
+    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+};
+
 TreeNode* deserialize(string data) {
     data.erase(remove(data.begin(), data.end(), ' '), data.end());
     if (data.front() == '[') data = data.substr(1);

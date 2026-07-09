@@ -138,4 +138,12 @@ public class TournamentsController : ControllerBase
         await _mediator.Send(command);
         return NoContent();
     }
+
+    [HttpGet("{id:guid}/results")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetResults(Guid id)
+    {
+        var result = await _mediator.Send(new CodeClash.Application.Features.Tournaments.Queries.GetTournamentResults.GetTournamentResultsQuery(id));
+        return Ok(result);
+    }
 }

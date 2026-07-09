@@ -94,8 +94,66 @@ public class Tournament
 
     public void Complete()
     {
+        if (Status == TournamentStatus.Completed) return;
+
         Status = TournamentStatus.Completed;
         UpdatedAt = DateTime.UtcNow;
+        
+        CalculateResults();
+    }
+
+    private void CalculateResults()
+    {
+        _results.Clear();
+
+        var participants = _registrations.Select(r => r.UserId).ToList();
+        
+        foreach (var userId in participants)
+        {
+            var userMatches = _matches.Where(m => m.Player1Id == userId || m.Player2Id == userId).ToList();
+            if (!userMatches.Any())
+            {
+                _results.Add(TournamentResult.Create(Id, userId, 0, 0));
+                continue;
+            }
+            
+            var reachedFinal = userMatches.Any(m => m.Round == RoundType.Final);
+            var reachedSemi = userMatches.Any(m => m.Round == RoundType.SemiFinal);
+            var reachedQuarter = userMatches.Any(m => m.Round == RoundType.QuarterFinal);
+            
+            var wonFinal = userMatches.Any(m => m.Round == RoundType.Final && m.WinnerId == userId);
+            
+            int rank;
+            int points;
+            
+            if (wonFinal)
+            {
+                rank = 1;
+                points = 100;
+            }
+            else if (reachedFinal)
+            {
+                rank = 2;
+                points = 50;
+            }
+            else if (reachedSemi)
+            {
+                rank = 3;
+                points = 25;
+            }
+            else if (reachedQuarter)
+            {
+                rank = 4;
+                points = 10;
+            }
+            else
+            {
+                rank = 5;
+                points = 5; // participation points
+            }
+            
+            _results.Add(TournamentResult.Create(Id, userId, rank, points));
+        }
     }
 
     public void RegisterPlayer(Guid userId)

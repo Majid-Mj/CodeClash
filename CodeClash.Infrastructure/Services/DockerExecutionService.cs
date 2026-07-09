@@ -539,7 +539,8 @@ if (input) {
     if (numsMatch && targetMatch) {
         const target = parseInt(targetMatch[1], 10);
         const nums = numsMatch[1].split(',').map(Number);
-        const res = twoSum(nums, target);
+        const sol = new Solution();
+        const res = sol.twoSum(nums, target);
         console.log(""["" + res[0] + "","" + res[1] + ""]"");
     }
 }

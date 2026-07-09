@@ -413,7 +413,6 @@ await db.Database.MigrateAsync();
 
         await db.SaveChangesAsync();
     }
-}
 
 // ── 8. Middleware pipeline ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();

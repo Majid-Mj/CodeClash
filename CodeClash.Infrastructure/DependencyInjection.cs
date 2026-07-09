@@ -24,7 +24,9 @@ public static class DependencyInjection
             provider => provider.GetRequiredService<ApplicationDbContext>());
 
         // Repositories
+        // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ITournamentRepository, TournamentRepository>();
 
         // Services
         services.AddScoped<IJwtService, JwtService>();

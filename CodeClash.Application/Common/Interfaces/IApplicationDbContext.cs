@@ -24,5 +24,11 @@ public interface IApplicationDbContext
     // ── System Logs ──────────────────────────────────────────────────────────
     DbSet<SystemLog> SystemLogs { get; }
     
+    // ── Tournaments ───────────────────────────────────────────────────────────
+    DbSet<Tournament> Tournaments { get; }
+    DbSet<TournamentRegistration> TournamentRegistrations { get; }
+    DbSet<TournamentMatch> TournamentMatches { get; }
+    DbSet<TournamentResult> TournamentResults { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

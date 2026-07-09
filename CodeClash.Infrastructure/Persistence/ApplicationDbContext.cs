@@ -31,6 +31,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // ── System Logs ──────────────────────────────────────────────────────────
     public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
 
+    // ── Tournaments ───────────────────────────────────────────────────────────
+    public DbSet<Tournament> Tournaments => Set<Tournament>();
+    public DbSet<TournamentRegistration> TournamentRegistrations => Set<TournamentRegistration>();
+    public DbSet<TournamentMatch> TournamentMatches => Set<TournamentMatch>();
+    public DbSet<TournamentResult> TournamentResults => Set<TournamentResult>();
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

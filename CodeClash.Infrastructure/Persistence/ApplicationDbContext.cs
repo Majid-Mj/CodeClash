@@ -30,6 +30,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     // ── System Logs ──────────────────────────────────────────────────────────
     public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
+    // ── RAG Chatbot ───────────────────────────────────────────────────────────────
+    public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
 
     // ── Tournaments ───────────────────────────────────────────────────────────
     public DbSet<Tournament> Tournaments => Set<Tournament>();
@@ -41,4 +45,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         base.OnModelCreating(builder);
     }
+
+
+
 }

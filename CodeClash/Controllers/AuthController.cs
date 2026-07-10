@@ -1,4 +1,5 @@
 using AspNet.Security.OAuth.GitHub;
+using CodeClash.API.Common;
 using CodeClash.API.Extensions;
 using CodeClash.Application.Features.Auth.Commands.ForgotPassword;
 using CodeClash.Application.Features.Auth.Commands.Login;

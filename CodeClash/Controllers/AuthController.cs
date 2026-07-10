@@ -45,7 +45,7 @@ public class AuthController : ControllerBase
     // POST /api/v1/auth/register
     [HttpPost("register")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterRequestDto dto,
@@ -54,15 +54,15 @@ public class AuthController : ControllerBase
         var result = await _mediator.Send(new RegisterCommand(dto), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
+            return BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
 
-        return StatusCode(StatusCodes.Status201Created, new { message = result.Message, data = result.Data });
+        return StatusCode(StatusCodes.Status201Created, ApiResponse<string>.Ok(result.Data ?? string.Empty, result.Message));
     }
 
     // POST /api/v1/auth/login
     [HttpPost("login")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login(
@@ -73,20 +73,20 @@ public class AuthController : ControllerBase
         var result = await _mediator.Send(new LoginCommand(dto, deviceInfo), ct);
 
         if (!result.IsSuccess)
-            return Unauthorized(new { message = result.Message, errors = result.Errors });
+            return Unauthorized(ApiResponse<AuthResponseDto>.Fail(result.Errors, result.Message));
 
         if (result.Data != null)
         {
             AppendRefreshTokenCookie(result.Data.RefreshToken);
         }
 
-        return Ok(result.Data);
+        return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data!, result.Message));
     }
 
     // POST /api/v1/auth/logout
     [HttpPost("logout")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout(
@@ -104,7 +104,7 @@ public class AuthController : ControllerBase
         var result = await _mediator.Send(new LogoutCommand(cmdDto, userId), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
+            return BadRequest(ApiResponse<object>.Fail(result.Errors, result.Message));
 
         Response.Cookies.Delete("refreshToken", new CookieOptions
         {
@@ -113,46 +113,48 @@ public class AuthController : ControllerBase
             SameSite = SameSiteMode.None
         });
 
-        return Ok(new { message = result.Message });
+        return Ok(ApiResponse<object>.Ok(null!, result.Message));
     }
 
     // POST /api/v1/auth/refresh
     [HttpPost("refresh")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Refresh(CancellationToken ct)
     {
         if (!Request.Cookies.TryGetValue("refreshToken", out string? refreshToken) || string.IsNullOrEmpty(refreshToken))
         {
-            return BadRequest(new { message = "Refresh token is missing from cookies." });
+            return BadRequest(ApiResponse<AuthResponseDto>.Fail("Refresh token is missing from cookies."));
         }
 
         var dto = new RefreshTokenRequestDto(refreshToken);
         var result = await _mediator.Send(new RefreshTokenCommand(dto), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
+            return BadRequest(ApiResponse<AuthResponseDto>.Fail(result.Errors, result.Message));
 
         if (result.Data != null)
         {
             AppendRefreshTokenCookie(result.Data.RefreshToken);
         }
 
-        return Ok(result.Data);
+        return Ok(ApiResponse<AuthResponseDto>.Ok(result.Data!, result.Message));
     }
 
     [HttpPost("forgot-password")]
     [AllowAnonymous]
     [EnableRateLimiting("otp")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ForgotPassword(
         [FromBody] ForgotPasswordRequestDto dto,
         CancellationToken ct)
     {
         var result = await _mediator.Send(new ForgotPasswordCommand(dto), ct);
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
-        return Ok(new { message = result.Message });
+            return BadRequest(ApiResponse<object>.Fail(result.Errors, result.Message));
+        return Ok(ApiResponse<object>.Ok(null!, result.Message));
     }
 
     [HttpGet("github-login")]
@@ -254,15 +256,17 @@ public class AuthController : ControllerBase
     [HttpPost("reset-password")]
     [AllowAnonymous]
     [EnableRateLimiting("otp")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword(
         [FromBody] ResetPasswordRequestDto dto,
         CancellationToken ct)
     {
         var result = await _mediator.Send(new ResetPasswordCommand(dto), ct);
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
+            return BadRequest(ApiResponse<object>.Fail(result.Errors, result.Message));
 
-        return Ok(new { message = result.Message });
+        return Ok(ApiResponse<object>.Ok(null!, result.Message));
     }
 
     private void AppendRefreshTokenCookie(string refreshToken)

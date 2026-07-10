@@ -1,3 +1,4 @@
+using CodeClash.API.Common;
 using CodeClash.Application.Common.Interfaces;
 using CodeClash.Domain.Entities;
 using CodeClash.Domain.Enums;
@@ -46,7 +47,7 @@ public class UsersController : ControllerBase
 
     // GET /api/v1/admin/users
     [HttpGet]
-    [ProducesResponseType(typeof(UserManagementDto[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<UserManagementDto[]>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUsers(CancellationToken ct)
     {
         var users = await _context.Users
@@ -70,12 +71,12 @@ public class UsersController : ControllerBase
             );
         }).ToArray();
 
-        return Ok(dtos);
+        return Ok(ApiResponse<UserManagementDto[]>.Ok(dtos));
     }
 
     // PUT /api/v1/admin/users/{userId}/toggle-status
     [HttpPut("{userId:guid}/toggle-status")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ToggleUserStatus(Guid userId, CancellationToken ct)
@@ -83,14 +84,14 @@ public class UsersController : ControllerBase
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user == null)
         {
-            return NotFound(new { message = "User not found." });
+            return NotFound(ApiResponse<object>.Fail("User not found."));
         }
 
         // Prevent blocking admin accounts
         if (user.Role == UserRole.Admin)
         {
             await _loggingService.LogWarningAsync("SECURITY", $"Denied attempt to suspend administrator account '{user.Username}'.", nameof(UsersController), ct);
-            return BadRequest(new { message = "Action Denied: Administrator accounts cannot be suspended or deactivated." });
+            return BadRequest(ApiResponse<object>.Fail("Action Denied: Administrator accounts cannot be suspended or deactivated."));
         }
 
         if (user.IsActive)
@@ -105,12 +106,12 @@ public class UsersController : ControllerBase
 
         await _context.SaveChangesAsync(ct);
         await _loggingService.LogInfoAsync("USER_MANAGEMENT", $"User '{user.Username}' status updated to {(user.IsActive ? "Active" : "Suspended")}.", nameof(UsersController), ct);
-        return Ok(new { message = $"User {user.Username} status updated to {(user.IsActive ? "Active" : "Suspended")} successfully." });
+        return Ok(ApiResponse<object>.Ok(null!, $"User {user.Username} status updated to {(user.IsActive ? "Active" : "Suspended")} successfully."));
     }
 
     // POST /api/v1/admin/users/notify
     [HttpPost("notify")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SendNotification(
@@ -120,7 +121,7 @@ public class UsersController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.Message))
         {
-            return BadRequest(new { message = "Title and Message are required." });
+            return BadRequest(ApiResponse<object>.Fail("Title and Message are required."));
         }
 
         string type = dto.Type?.ToLower() ?? "info";
@@ -156,7 +157,7 @@ public class UsersController : ControllerBase
         }
 
         await _loggingService.LogInfoAsync("SYSTEM", $"System notification pushed: '{dto.Title}' (Target: {(dto.UserId.HasValue ? $"User {dto.UserId.Value}" : "All Users")}).", nameof(UsersController), ct);
-        return Ok(new { message = "System notification pushed successfully." });
+        return Ok(ApiResponse<object>.Ok(null!, "System notification pushed successfully."));
     }
 }
 

@@ -1,3 +1,4 @@
+using CodeClash.API.Common;
 using CodeClash.API.Extensions;
 using CodeClash.Application.Features.Profile.Commands.ChangePassword;
 using CodeClash.Application.Features.Profile.Commands.DeleteAccount;
@@ -30,7 +31,7 @@ public class ProfileController : ControllerBase
 
     // GET /api/v1/profile
     [HttpGet]
-    [ProducesResponseType(typeof(ProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ProfileDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProfile(CancellationToken ct)
@@ -39,14 +40,14 @@ public class ProfileController : ControllerBase
         var result = await _mediator.Send(new GetProfileQuery(userId), ct);
 
         if (!result.IsSuccess)
-            return NotFound(new { message = result.Message, errors = result.Errors });
+            return NotFound(ApiResponse<ProfileDto>.Fail(result.Errors, result.Message));
 
-        return Ok(result.Data);
+        return Ok(ApiResponse<ProfileDto>.Ok(result.Data!, result.Message));
     }
 
     // GET /api/v1/profile/stats
     [HttpGet("stats")]
-    [ProducesResponseType(typeof(ProfileStatsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ProfileStatsDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProfileStats(CancellationToken ct)
@@ -55,14 +56,14 @@ public class ProfileController : ControllerBase
         var result = await _mediator.Send(new CodeClash.Application.Features.Profile.Queries.GetProfileStats.GetProfileStatsQuery(userId), ct);
 
         if (!result.IsSuccess)
-            return NotFound(new { message = result.Message, errors = result.Errors });
+            return NotFound(ApiResponse<ProfileStatsDto>.Fail(result.Errors, result.Message));
 
-        return Ok(result.Data);
+        return Ok(ApiResponse<ProfileStatsDto>.Ok(result.Data!, result.Message));
     }
 
     // PUT /api/v1/profile
     [HttpPut]
-    [ProducesResponseType(typeof(ProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ProfileDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UpdateProfile(
@@ -73,15 +74,15 @@ public class ProfileController : ControllerBase
         var result = await _mediator.Send(new UpdateProfileCommand(userId, dto), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
+            return BadRequest(ApiResponse<ProfileDto>.Fail(result.Errors, result.Message));
 
-        return Ok(result.Data);
+        return Ok(ApiResponse<ProfileDto>.Ok(result.Data!, result.Message));
     }
 
     // POST /api/v1/profile/image
     [HttpPost("image")]
     [Consumes("multipart/form-data")]
-    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UploadProfilePicture(
@@ -89,7 +90,7 @@ public class ProfileController : ControllerBase
         CancellationToken ct)
     {
         if (file == null || file.Length == 0)
-            return BadRequest(new { message = "No file uploaded.", errors = new[] { "Validation failed" } });
+            return BadRequest(ApiResponse<string>.Fail("No file uploaded."));
 
         using var stream = file.OpenReadStream();
         var command = new UploadProfilePictureCommand(
@@ -103,14 +104,14 @@ public class ProfileController : ControllerBase
         var result = await _mediator.Send(command, ct);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
+            return BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
 
-        return Ok(new { url = result.Data, message = result.Message });
+        return Ok(ApiResponse<string>.Ok(result.Data ?? string.Empty, result.Message));
     }
 
     // PUT /api/v1/profile/password
     [HttpPut("password")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword(
@@ -121,14 +122,14 @@ public class ProfileController : ControllerBase
         var result = await _mediator.Send(new ChangePasswordCommand(userId, dto), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
+            return BadRequest(ApiResponse<object>.Fail(result.Errors, result.Message));
 
-        return Ok(new { message = result.Message });
+        return Ok(ApiResponse<object>.Ok(null!, result.Message));
     }
 
     // DELETE /api/v1/profile
     [HttpDelete]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeleteAccount(CancellationToken ct)
@@ -137,8 +138,8 @@ public class ProfileController : ControllerBase
         var result = await _mediator.Send(new DeleteAccountCommand(userId), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
+            return BadRequest(ApiResponse<object>.Fail(result.Errors, result.Message));
 
-        return Ok(new { message = result.Message });
+        return Ok(ApiResponse<object>.Ok(null!, result.Message));
     }
 }

@@ -233,7 +233,7 @@ public class AuthController : ControllerBase
                     user.UpdateProfile(
                         string.IsNullOrEmpty(user.FullName) || user.FullName == "GitHub User" ? name : user.FullName,
                         user.PhoneNumber,
-                        githubUsername
+                        githubUsername!
                     );
                 }
             }

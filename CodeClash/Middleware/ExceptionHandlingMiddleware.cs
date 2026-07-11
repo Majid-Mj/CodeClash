@@ -81,7 +81,7 @@ public class ExceptionHandlingMiddleware
             {
                 Status = (int)HttpStatusCode.InternalServerError,
                 Title = "Internal Server Error",
-                Detail = "An unexpected error occurred. Please try again later."
+                Detail = ex.Message + " | " + ex.InnerException?.Message
             };
             await WriteResponse(context, HttpStatusCode.InternalServerError, problem);
         }

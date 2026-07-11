@@ -1,4 +1,4 @@
-﻿namespace CodeClash.Domain.Enums;
+namespace CodeClash.Domain.Enums;
 
 public enum ProblemCategory
 {
@@ -16,5 +16,7 @@ public enum ProblemCategory
     SlidingWindow = 12,
     Math = 13,
     Greedy = 14,
-    BitManipulation = 15
+    BitManipulation = 15,
+    Algorithms = 16,
+    Contests = 17
 }

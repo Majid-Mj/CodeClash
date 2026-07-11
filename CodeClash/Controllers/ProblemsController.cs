@@ -1,3 +1,4 @@
+using CodeClash.API.Common;
 using CodeClash.API.Extensions;
 using CodeClash.Application.Features.Problems.Commands.CreateProblem;
 using CodeClash.Application.Features.Problems.Commands.DeleteProblem;
@@ -32,7 +33,7 @@ public class ProblemsController : ControllerBase
     // GET /api/v1/problems
     [HttpGet]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<CodeClash.Application.Common.Models.PaginatedList<ProblemSummaryDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetProblems(
         [FromQuery] int pageNumber = 1,
@@ -44,6 +45,7 @@ public class ProblemsController : ControllerBase
     {
         // Admins can see inactive problems; regular users / anonymous see active only
         bool isAdmin = User.IsInRole("Admin");
+        Guid? userId = User.Identity?.IsAuthenticated == true ? User.GetUserId() : null;
 
         var result = await _mediator.Send(new GetProblemsQuery(
             pageNumber,
@@ -51,18 +53,19 @@ public class ProblemsController : ControllerBase
             difficulty,
             category,
             search,
-            ActiveOnly: !isAdmin), ct);
+            ActiveOnly: !isAdmin,
+            UserId: userId), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
+            return BadRequest(ApiResponse<CodeClash.Application.Common.Models.PaginatedList<ProblemSummaryDto>>.Fail(result.Errors, result.Message));
 
-        return Ok(result.Data);
+        return Ok(ApiResponse<CodeClash.Application.Common.Models.PaginatedList<ProblemSummaryDto>>.Ok(result.Data!, result.Message));
     }
 
     // GET /api/v1/problems/{problemId}
     [HttpGet("{problemId:guid}")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ProblemDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ProblemDetailDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProblemById(
@@ -75,16 +78,16 @@ public class ProblemsController : ControllerBase
             new GetProblemByIdQuery(problemId, isAdmin), ct);
 
         if (!result.IsSuccess)
-            return NotFound(new { message = result.Message, errors = result.Errors });
+            return NotFound(ApiResponse<ProblemDetailDto>.Fail(result.Errors, result.Message));
 
-        return Ok(result.Data);
+        return Ok(ApiResponse<ProblemDetailDto>.Ok(result.Data!, result.Message));
     }
 
     // POST /api/v1/problems
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting("admin-write")]
-    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -97,16 +100,16 @@ public class ProblemsController : ControllerBase
         var result = await _mediator.Send(new CreateProblemCommand(dto, adminUserId), ct);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message, errors = result.Errors });
+            return BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
 
-        return StatusCode(StatusCodes.Status201Created, new { id = result.Data, message = result.Message });
+        return StatusCode(StatusCodes.Status201Created, ApiResponse<string>.Ok(result.Data.ToString(), result.Message));
     }
 
     // PUT /api/v1/problems/{problemId}
     [HttpPut("{problemId:guid}")]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting("admin-write")]
-    [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -124,17 +127,17 @@ public class ProblemsController : ControllerBase
         if (!result.IsSuccess)
         {
             return result.Errors.Any(e => e.Contains("not found"))
-                ? NotFound(new { message = result.Message, errors = result.Errors })
-                : BadRequest(new { message = result.Message, errors = result.Errors });
+                ? NotFound(ApiResponse<string>.Fail(result.Errors, result.Message))
+                : BadRequest(ApiResponse<string>.Fail(result.Errors, result.Message));
         }
 
-        return Ok(new { id = result.Data, message = result.Message });
+        return Ok(ApiResponse<string>.Ok(result.Data.ToString(), result.Message));
     }
 
     // DELETE /api/v1/problems/{problemId}
     [HttpDelete("{problemId:guid}")]
     [Authorize(Roles = "Admin")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -148,17 +151,17 @@ public class ProblemsController : ControllerBase
         if (!result.IsSuccess)
         {
             return result.Errors.Any(e => e.Contains("not found"))
-                ? NotFound(new { message = result.Message, errors = result.Errors })
-                : BadRequest(new { message = result.Message, errors = result.Errors });
+                ? NotFound(ApiResponse<object>.Fail(result.Errors, result.Message))
+                : BadRequest(ApiResponse<object>.Fail(result.Errors, result.Message));
         }
 
-        return Ok(new { message = result.Message });
+        return Ok(ApiResponse<object>.Ok(null!, result.Message));
     }
 
     // PUT /api/v1/problems/{problemId}/toggle-status
     [HttpPut("{problemId:guid}/toggle-status")]
     [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ToggleProblemStatus(Guid problemId, CancellationToken ct = default)
     {
@@ -166,9 +169,9 @@ public class ProblemsController : ControllerBase
 
         if (!result.IsSuccess)
         {
-            return NotFound(new { message = result.Message, errors = result.Errors });
+            return NotFound(ApiResponse<bool>.Fail(result.Errors, result.Message));
         }
 
-        return Ok(new { status = result.Data, message = result.Message });
+        return Ok(ApiResponse<bool>.Ok(result.Data, result.Message));
     }
 }

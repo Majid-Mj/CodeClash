@@ -39,8 +39,10 @@ public class LeaderboardController : ControllerBase
     {
         var users = await _context.Users
             .AsNoTracking()
-            .Where(u => u.Role != CodeClash.Domain.Enums.UserRole.Admin)
-            .OrderBy(u => u.Username)
+            .Where(u => u.IsActive)
+            .OrderByDescending(u => u.TotalPoints)
+            .ThenBy(u => u.Username)
+            .Take(100)
             .ToListAsync(ct);
 
         var dtos = users.Select(user => {
@@ -48,8 +50,8 @@ public class LeaderboardController : ControllerBase
                 Id: user.Id,
                 Username: user.Username,
                 Email: user.Email,
-                Elo: 0, // Hardcoded to 0 for now
-                Country: "US" // Hardcoded country if user entity doesn't have it
+                Elo: user.TotalPoints, 
+                Country: "US" 
             );
         }).ToArray();
 

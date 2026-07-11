@@ -12,6 +12,7 @@ public interface IApplicationDbContext
     DbSet<Problem> Problems { get; }
     DbSet<TestCase> TestCases { get; }
     DbSet<Submission> Submissions { get; }
+    DbSet<BattleRecord> BattleRecords { get; }
     // ── Notifications ──────────────────────────────────────────────────────────
     DbSet<Notification> Notifications { get; }
     
@@ -25,5 +26,11 @@ public interface IApplicationDbContext
 
     DbSet<CustomDuelRoom> CustomDuelRooms { get; }
     
+    // ── Tournaments ───────────────────────────────────────────────────────────
+    DbSet<Tournament> Tournaments { get; }
+    DbSet<TournamentRegistration> TournamentRegistrations { get; }
+    DbSet<TournamentMatch> TournamentMatches { get; }
+    DbSet<TournamentResult> TournamentResults { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,4 @@
-﻿using CodeClash.Application.Common.Models;
+using CodeClash.Application.Common.Models;
 using CodeClash.Application.Features.Problems.DTOs;
 using MediatR;
 
@@ -10,5 +10,6 @@ public record GetProblemsQuery(
     string? Difficulty = null,
     string? Category = null,
     string? Search = null,
-    bool ActiveOnly = true   // Users see active only; Admin sees all
+    bool ActiveOnly = true,   // Users see active only; Admin sees all
+    Guid? UserId = null
 ) : IRequest<Result<PaginatedList<ProblemSummaryDto>>>;

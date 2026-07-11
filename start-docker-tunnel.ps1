@@ -22,4 +22,4 @@ Write-Host "Look for a line like: https://xxxxx.trycloudflare.com" -ForegroundCo
 Write-Host "Then update your Azure App Service setting 'Docker__HostUri' with that URL." -ForegroundColor Yellow
 Write-Host ""
 
-& $cloudflaredExe tunnel --url http://localhost:2375
+& $cloudflaredExe tunnel --url http://localhost:2377 --protocol http2

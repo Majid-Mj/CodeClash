@@ -35,6 +35,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
 
+
     // ── Tournaments ───────────────────────────────────────────────────────────
     public DbSet<Tournament> Tournaments => Set<Tournament>();
     public DbSet<TournamentRegistration> TournamentRegistrations => Set<TournamentRegistration>();

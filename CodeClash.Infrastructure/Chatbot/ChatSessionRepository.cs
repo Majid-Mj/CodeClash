@@ -23,7 +23,6 @@ public sealed class ChatSessionRepository : IChatSessionRepository
         if (sessionId.HasValue)
         {
             var existing = await _db.ChatSessions
-                .Include(s => s.Messages.OrderBy(m => m.CreatedAt))
                 .FirstOrDefaultAsync(s => s.Id == sessionId.Value && s.UserId == userId, ct);
 
             if (existing is not null)

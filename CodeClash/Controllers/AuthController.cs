@@ -1,4 +1,5 @@
 using AspNet.Security.OAuth.GitHub;
+using CodeClash.API.Common;
 using CodeClash.API.Extensions;
 using CodeClash.Application.Features.Auth.Commands.ForgotPassword;
 using CodeClash.Application.Features.Auth.Commands.Login;
@@ -188,6 +189,8 @@ public class AuthController : ControllerBase
                    ?? "GitHub User";
         var githubId = result.Principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
                        ?? result.Principal.FindFirst("urn:github:id")?.Value;
+        var githubUsername = result.Principal.FindFirst("urn:github:login")?.Value;
+        var avatarUrl = result.Principal.FindFirst("urn:github:avatar_url")?.Value;
 
         if (string.IsNullOrEmpty(email))
         {
@@ -200,7 +203,7 @@ public class AuthController : ControllerBase
         if (user == null)
         {
             // Generate a unique username
-            var username = result.Principal.FindFirst("urn:github:login")?.Value 
+            var username = githubUsername 
                            ?? email.Split('@')[0] 
                            ?? Guid.NewGuid().ToString("N").Substring(0, 8);
 
@@ -212,18 +215,43 @@ public class AuthController : ControllerBase
             }
 
             user = CodeClash.Domain.Entities.User.CreateGitHub(name, username, email, githubId ?? string.Empty);
+            if (!string.IsNullOrEmpty(avatarUrl))
+            {
+                user.UpdateProfileImageUrl(avatarUrl);
+            }
             await _context.Users.AddAsync(user, ct);
             await _context.SaveChangesAsync(ct);
         }
         else
         {
+            // Update GitHub Username if it differs
+            if (!string.IsNullOrEmpty(githubUsername) && user.Username != githubUsername.ToLower())
+            {
+                // Verify the new username is not already taken by another user
+                if (!await _context.Users.AnyAsync(u => u.Username == githubUsername.ToLower() && u.Id != user.Id, ct))
+                {
+                    user.UpdateProfile(
+                        string.IsNullOrEmpty(user.FullName) || user.FullName == "GitHub User" ? name : user.FullName,
+                        user.PhoneNumber,
+                        githubUsername!
+                    );
+                }
+            }
+
+            // Update avatar if not already set
+            if (!string.IsNullOrEmpty(avatarUrl) && string.IsNullOrEmpty(user.ProfileImageUrl))
+            {
+                user.UpdateProfileImageUrl(avatarUrl);
+            }
+
             // If user exists but doesn't have GithubId, update it
             if (string.IsNullOrEmpty(user.GithubId))
             {
                 user.LinkGitHub(githubId ?? string.Empty);
-                _context.Users.Update(user);
-                await _context.SaveChangesAsync(ct);
             }
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync(ct);
         }
 
         // 4. Generate standard JWT tokens

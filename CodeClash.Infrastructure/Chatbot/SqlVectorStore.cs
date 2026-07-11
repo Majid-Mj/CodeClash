@@ -1,4 +1,4 @@
-﻿using CodeClash.Application.Common.Interfaces;
+using CodeClash.Application.Common.Interfaces;
 using CodeClash.Domain.Entities;
 using CodeClash.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -60,7 +60,7 @@ public sealed class SqlVectorStore : IVectorStore
         await _lock.WaitAsync(ct);
         try
         {
-            var chunks = await _db.KnowledgeChunks.ToListAsync(ct);
+            var chunks = await _db.KnowledgeChunks.AsNoTracking().ToListAsync(ct);
             _cache = chunks
                 .Select(c =>
                 {

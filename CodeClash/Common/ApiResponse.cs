@@ -9,7 +9,7 @@ namespace CodeClash.API.Common
         public T? Data { get; set; }
         public List<string> Errors { get; set; } = new List<string>();
 
-        public static ApiResponse<T> Ok(T data, string message = "Operation completed successfully")
+        public static ApiResponse<T> Ok(T? data, string message = "Operation completed successfully")
         {
             return new ApiResponse<T>
             {

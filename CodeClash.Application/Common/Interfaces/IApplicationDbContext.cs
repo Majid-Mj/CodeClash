@@ -22,6 +22,8 @@ public interface IApplicationDbContext
 
     // ── System Logs ──────────────────────────────────────────────────────────
     DbSet<SystemLog> SystemLogs { get; }
+
+    DbSet<CustomDuelRoom> CustomDuelRooms { get; }
     
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

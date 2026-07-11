@@ -30,6 +30,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     // ── System Logs ──────────────────────────────────────────────────────────
     public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
 
+    public DbSet<CustomDuelRoom> CustomDuelRooms => Set<CustomDuelRoom>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

@@ -28,8 +28,15 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<PromptHistory> PromptHistories => Set<PromptHistory>();
     public DbSet<AIUsageLog> AIUsageLogs => Set<AIUsageLog>();
 
+    // ── Chatbot ──────────────────────────────────────────────────────────────
+    public DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
+    public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+
     // ── System Logs ──────────────────────────────────────────────────────────
     public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
+
+    public DbSet<CustomDuelRoom> CustomDuelRooms => Set<CustomDuelRoom>();
 
     // ── Tournaments ───────────────────────────────────────────────────────────
     public DbSet<Tournament> Tournaments => Set<Tournament>();

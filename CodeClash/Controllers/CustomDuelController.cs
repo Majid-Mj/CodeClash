@@ -264,6 +264,21 @@ public class CustomDuelController : ControllerBase
             problemId = problem.Id
         }, ct);
 
+        // Also send directly to each user to guarantee delivery even if they
+        // auto-reconnected and lost SignalR group membership
+        await _hubContext.Clients.User(room.HostUserId.ToString()).SendAsync("DuelStarted", new
+        {
+            roomId = room.Id,
+            roomCode = room.RoomCode,
+            problemId = problem.Id
+        }, ct);
+        await _hubContext.Clients.User(room.FriendUserId.ToString()).SendAsync("DuelStarted", new
+        {
+            roomId = room.Id,
+            roomCode = room.RoomCode,
+            problemId = problem.Id
+        }, ct);
+
         return Ok(new
         {
             roomId = room.Id,

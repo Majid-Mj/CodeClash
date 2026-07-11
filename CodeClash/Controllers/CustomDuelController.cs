@@ -231,13 +231,17 @@ public class CustomDuelController : ControllerBase
             return BadRequest(new { message = "Cannot start duel. Both players must be ready." });
         }
 
-        // Select a random active problem filtered by difficulty if provided
+        // Select a random active problem filtered by difficulty if provided, with fallback to any active problem if none match
         var query = _context.Problems.Where(p => p.IsActive);
 
         if (!string.IsNullOrWhiteSpace(request.Difficulty) &&
             Enum.TryParse<Difficulty>(request.Difficulty, ignoreCase: true, out var difficultyEnum))
         {
-            query = query.Where(p => p.Difficulty == difficultyEnum);
+            var filteredQuery = query.Where(p => p.Difficulty == difficultyEnum);
+            if (await filteredQuery.AnyAsync(ct))
+            {
+                query = filteredQuery;
+            }
         }
 
         var problem = await query

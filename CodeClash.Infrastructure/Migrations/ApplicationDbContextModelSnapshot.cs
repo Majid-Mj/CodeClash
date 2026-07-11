@@ -1031,17 +1031,17 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasOne("CodeClash.Domain.Entities.Problem", "AssignedProblem")
                         .WithMany()
                         .HasForeignKey("AssignedProblemId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("CodeClash.Domain.Entities.User", "Player1")
                         .WithMany()
                         .HasForeignKey("Player1Id")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("CodeClash.Domain.Entities.User", "Player2")
                         .WithMany()
                         .HasForeignKey("Player2Id")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("CodeClash.Domain.Entities.Tournament", "Tournament")
                         .WithMany("Matches")
@@ -1052,7 +1052,7 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasOne("CodeClash.Domain.Entities.User", "Winner")
                         .WithMany()
                         .HasForeignKey("WinnerId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("AssignedProblem");
 

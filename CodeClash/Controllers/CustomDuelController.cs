@@ -36,6 +36,7 @@ public class CustomDuelController : ControllerBase
     public record DeclineRequest(Guid RoomId);
     public record ReadyRequest(Guid RoomId, Guid UserId, bool IsReady);
     public record StartRequest(Guid RoomId);
+    public record LeaveRequest(Guid RoomId, Guid UserId);
 
     // POST /api/v1/customduel/invite
     [HttpPost("invite")]
@@ -257,5 +258,43 @@ public class CustomDuelController : ControllerBase
             status = room.Status,
             problemId = problem.Id
         });
+    }
+
+    // POST /api/v1/customduel/leave
+    [HttpPost("leave")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> LeaveDuel([FromBody] LeaveRequest request, CancellationToken ct)
+    {
+        var room = await _context.CustomDuelRooms.FirstOrDefaultAsync(r => r.Id == request.RoomId, ct);
+        if (room == null)
+        {
+            return NotFound(new { message = "Custom duel room not found." });
+        }
+
+        if (request.UserId != room.HostUserId && request.UserId != room.FriendUserId)
+        {
+            return BadRequest(new { message = "User does not belong to this duel room." });
+        }
+
+        room.SetPlayerLeft(request.UserId);
+
+        // If both left, complete without winner
+        if (room.HasHostLeft && room.HasFriendLeft)
+        {
+            room.Complete(Guid.Empty);
+        }
+
+        await _context.SaveChangesAsync(ct);
+
+        // Notify all players in the SignalR group
+        await _hubContext.Clients.Group(request.RoomId.ToString()).SendAsync("PlayerLeft", new
+        {
+            roomId = room.Id,
+            userId = request.UserId
+        }, ct);
+
+        return Ok(new { message = "Player left the duel room successfully." });
     }
 }

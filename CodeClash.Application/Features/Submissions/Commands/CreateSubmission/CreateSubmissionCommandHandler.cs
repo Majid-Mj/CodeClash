@@ -21,17 +21,20 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
     private readonly IDockerExecutionService _dockerService;
     private readonly ILogger<CreateSubmissionCommandHandler> _logger;
     private readonly ISystemLoggingService _loggingService;
+    private readonly IDuelNotificationService _duelNotificationService;
 
     public CreateSubmissionCommandHandler(
         IApplicationDbContext context,
         IDockerExecutionService dockerService,
         ILogger<CreateSubmissionCommandHandler> logger,
-        ISystemLoggingService loggingService)
+        ISystemLoggingService loggingService,
+        IDuelNotificationService duelNotificationService)
     {
         _context = context;
         _dockerService = dockerService;
         _logger = logger;
         _loggingService = loggingService;
+        _duelNotificationService = duelNotificationService;
     }
 
     public async Task<Result<SubmissionResponseDto>> Handle(CreateSubmissionCommand request, CancellationToken ct)
@@ -190,7 +193,30 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
                     _logger.LogInformation("User {UserId} awarded 3 points for solving problem {ProblemId}", request.UserId, problem.Id);
                 }
             }
+
+            // ─── Custom Duel Battle Win Handling ───
+            var activeDuel = await _context.CustomDuelRooms
+                .FirstOrDefaultAsync(r => r.Status == "Started" && 
+                                          r.SelectedProblemId == problem.Id &&
+                                          (r.HostUserId == request.UserId || r.FriendUserId == request.UserId), ct);
+            if (activeDuel != null)
+            {
+                activeDuel.Complete(request.UserId);
+
+                // Award 15 winner points to the winner user
+                var winnerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
+                if (winnerUser != null)
+                {
+                    winnerUser.AddPoints(15);
+                    _logger.LogInformation("User {UserId} awarded 15 points for winning the custom duel {RoomId}", request.UserId, activeDuel.Id);
+                }
+
+                // Send SignalR notification to the room group
+                await _duelNotificationService.NotifyDuelEndedAsync(activeDuel.Id, request.UserId, ct);
+            }
         }
+
+
 
         await _context.SaveChangesAsync(ct);
 

@@ -128,6 +128,7 @@ builder.Services.AddAuthorization(options =>
 // SignalR services & Custom Authentication Provider mapping
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+builder.Services.AddScoped<CodeClash.Application.Common.Interfaces.IDuelNotificationService, CodeClash.API.Hubs.DuelNotificationService>();
 
 builder.Services.AddRateLimiter(options =>
 {

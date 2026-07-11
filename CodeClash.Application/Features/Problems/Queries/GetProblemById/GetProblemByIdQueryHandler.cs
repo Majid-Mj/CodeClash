@@ -24,6 +24,7 @@ public class GetProblemByIdQueryHandler
         var problem = await _context.Problems
             .AsNoTracking()
             .Include(p => p.TestCases.OrderBy(tc => tc.OrderIndex))
+            .Include(p => p.LanguageTemplates)
             .FirstOrDefaultAsync(
                 p => p.Id == request.ProblemId && p.DeletedAt == null,
                 ct);
@@ -57,6 +58,10 @@ public class GetProblemByIdQueryHandler
             ))
             .ToList();
 
+        var languageTemplateDtos = problem.LanguageTemplates
+            .Select(lt => new ProblemLanguageTemplateDto(lt.Language, lt.StarterCode))
+            .ToList();
+
         var dto = new ProblemDetailDto(
             problem.Id,
             problem.Title,
@@ -71,10 +76,12 @@ public class GetProblemByIdQueryHandler
             problem.IsActive,
             creatorUsername,
             problem.CreatedAt,
-            testCaseDtos
+            testCaseDtos,
+            languageTemplateDtos
         );
 
         return Result<ProblemDetailDto>.Success(dto, "Problem retrieved successfully.");
+
     }
 
     private static List<string> DeserializeStringList(string json)

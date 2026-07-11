@@ -12,6 +12,9 @@ public class CustomDuelRoom
     public bool IsHostReady { get; private set; }
     public bool IsFriendReady { get; private set; }
     public Guid? SelectedProblemId { get; private set; }
+    public Guid? WinnerId { get; private set; }
+    public bool HasHostLeft { get; private set; }
+    public bool HasFriendLeft { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
@@ -19,6 +22,7 @@ public class CustomDuelRoom
     public User HostUser { get; private set; } = null!;
     public User FriendUser { get; private set; } = null!;
     public Problem? SelectedProblem { get; private set; }
+    public User? Winner { get; private set; }
 
     private CustomDuelRoom() { }
 
@@ -33,6 +37,8 @@ public class CustomDuelRoom
             Status = "Pending",
             IsHostReady = false,
             IsFriendReady = false,
+            HasHostLeft = false,
+            HasFriendLeft = false,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -69,4 +75,25 @@ public class CustomDuelRoom
         SelectedProblemId = problemId;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void SetPlayerLeft(Guid userId)
+    {
+        if (userId == HostUserId)
+        {
+            HasHostLeft = true;
+        }
+        else if (userId == FriendUserId)
+        {
+            HasFriendLeft = true;
+        }
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Complete(Guid winnerId)
+    {
+        Status = "Completed";
+        WinnerId = winnerId;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
+

@@ -37,5 +37,11 @@ public class CustomDuelRoomConfiguration : IEntityTypeConfiguration<CustomDuelRo
             .WithMany()
             .HasForeignKey(r => r.SelectedProblemId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Winner relationship
+        builder.HasOne(r => r.Winner)
+            .WithMany()
+            .HasForeignKey(r => r.WinnerId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -23,6 +23,8 @@ public interface IApplicationDbContext
 
     // ── System Logs ──────────────────────────────────────────────────────────
     DbSet<SystemLog> SystemLogs { get; }
+
+    DbSet<CustomDuelRoom> CustomDuelRooms { get; }
     
     // ── Tournaments ───────────────────────────────────────────────────────────
     DbSet<Tournament> Tournaments { get; }

@@ -1,5 +1,6 @@
 using CodeClash.Application.Common.Interfaces;
 using CodeClash.Domain.Entities;
+using CodeClash.Domain.Enums;
 using CodeClash.API.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -35,7 +36,7 @@ public class CustomDuelController : ControllerBase
     public record AcceptRequest(Guid RoomId);
     public record DeclineRequest(Guid RoomId);
     public record ReadyRequest(Guid RoomId, Guid UserId, bool IsReady);
-    public record StartRequest(Guid RoomId);
+    public record StartRequest(Guid RoomId, string? Difficulty);
     public record LeaveRequest(Guid RoomId, Guid UserId);
 
     // POST /api/v1/customduel/invite
@@ -230,9 +231,16 @@ public class CustomDuelController : ControllerBase
             return BadRequest(new { message = "Cannot start duel. Both players must be ready." });
         }
 
-        // Select a random active problem
-        var problem = await _context.Problems
-            .Where(p => p.IsActive)
+        // Select a random active problem filtered by difficulty if provided
+        var query = _context.Problems.Where(p => p.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(request.Difficulty) &&
+            Enum.TryParse<Difficulty>(request.Difficulty, ignoreCase: true, out var difficultyEnum))
+        {
+            query = query.Where(p => p.Difficulty == difficultyEnum);
+        }
+
+        var problem = await query
             .OrderBy(p => Guid.NewGuid()) // Random order
             .FirstOrDefaultAsync(ct);
 

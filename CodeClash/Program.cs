@@ -351,13 +351,25 @@ await db.Database.MigrateAsync();
     }
 
     // Seed Problems
-    if (!await db.Problems.AnyAsync())
+    var adminUserId = adminUser.Id;
+    var allowedLangs = "[\"c\", \"cpp\", \"java\", \"csharp\", \"python\", \"javascript\", \"go\", \"rust\"]";
+
+    // Helper to seed a problem if it doesn't exist yet
+    async Task SeedProblemAsync(string slug, Func<CodeClash.Domain.Entities.Problem> createFn)
     {
-        var adminUserId = adminUser.Id;
-        var allowedLangs = "[\"c\", \"cpp\", \"java\", \"csharp\", \"python\", \"javascript\", \"go\", \"rust\"]";
-        
-        // 1. Two Sum
-        var twoSum = CodeClash.Domain.Entities.Problem.Create(
+        var exists = await db.Problems.AnyAsync(p => p.Slug == slug);
+        if (!exists)
+        {
+            var problem = createFn();
+            await db.Problems.AddAsync(problem);
+            await db.SaveChangesAsync();
+        }
+    }
+
+    // 1. Two Sum
+    await SeedProblemAsync("two-sum", () =>
+    {
+        var p = CodeClash.Domain.Entities.Problem.Create(
             "Two Sum",
             CodeClash.Domain.Enums.Difficulty.Easy,
             CodeClash.Domain.Enums.ProblemCategory.Arrays,
@@ -368,14 +380,17 @@ await db.Database.MigrateAsync();
             256,
             adminUserId
         );
-        twoSum.AddTestCase("9\n2 7 11 15", "0 1", false);
-        twoSum.AddTestCase("6\n3 2 4", "1 2", false);
-        twoSum.AddTestCase("6\n3 3", "0 1", true);
-        twoSum.Activate();
-        await db.Problems.AddAsync(twoSum);
+        p.AddTestCase("9\n2 7 11 15", "0 1", false);
+        p.AddTestCase("6\n3 2 4", "1 2", false);
+        p.AddTestCase("6\n3 3", "0 1", true);
+        p.Activate();
+        return p;
+    });
 
-        // 2. Palindrome Number
-        var palindromeNum = CodeClash.Domain.Entities.Problem.Create(
+    // 2. Palindrome Number
+    await SeedProblemAsync("palindrome-number", () =>
+    {
+        var p = CodeClash.Domain.Entities.Problem.Create(
             "Palindrome Number",
             CodeClash.Domain.Enums.Difficulty.Easy,
             CodeClash.Domain.Enums.ProblemCategory.Math,
@@ -386,14 +401,17 @@ await db.Database.MigrateAsync();
             256,
             adminUserId
         );
-        palindromeNum.AddTestCase("121", "true", false);
-        palindromeNum.AddTestCase("-121", "false", false);
-        palindromeNum.AddTestCase("10", "false", true);
-        palindromeNum.Activate();
-        await db.Problems.AddAsync(palindromeNum);
+        p.AddTestCase("121", "true", false);
+        p.AddTestCase("-121", "false", false);
+        p.AddTestCase("10", "false", true);
+        p.Activate();
+        return p;
+    });
 
-        // 3. Valid Parentheses
-        var validParentheses = CodeClash.Domain.Entities.Problem.Create(
+    // 3. Valid Parentheses
+    await SeedProblemAsync("valid-parentheses", () =>
+    {
+        var p = CodeClash.Domain.Entities.Problem.Create(
             "Valid Parentheses",
             CodeClash.Domain.Enums.Difficulty.Easy,
             CodeClash.Domain.Enums.ProblemCategory.Strings,
@@ -404,16 +422,56 @@ await db.Database.MigrateAsync();
             256,
             adminUserId
         );
-        validParentheses.AddTestCase("()", "true", false);
-        validParentheses.AddTestCase("()[]{}", "true", false);
-        validParentheses.AddTestCase("(]", "false", false);
-        validParentheses.AddTestCase("([)]", "false", true);
-        validParentheses.AddTestCase("{[]}", "true", true);
-        validParentheses.Activate();
-        await db.Problems.AddAsync(validParentheses);
+        p.AddTestCase("()", "true", false);
+        p.AddTestCase("()[]{}", "true", false);
+        p.AddTestCase("(]", "false", false);
+        p.AddTestCase("([)]", "false", true);
+        p.AddTestCase("{[]}", "true", true);
+        p.Activate();
+        return p;
+    });
 
-        await db.SaveChangesAsync();
-    }
+    // 4. Longest Substring Without Repeating Characters [Medium]
+    await SeedProblemAsync("longest-substring-without-repeating-characters", () =>
+    {
+        var p = CodeClash.Domain.Entities.Problem.Create(
+            "Longest Substring Without Repeating Characters",
+            CodeClash.Domain.Enums.Difficulty.Medium,
+            CodeClash.Domain.Enums.ProblemCategory.Strings,
+            "Given a string `s`, find the length of the longest substring without repeating characters.\n\n### Input Format:\n- A single line containing the string `s`.\n\n### Output Format:\n- A single integer representing the length.",
+            "[\"0 <= s.length <= 5 * 10^4\", \"s consists of English letters, digits, symbols and spaces.\"]",
+            allowedLangs,
+            2000,
+            256,
+            adminUserId
+        );
+        p.AddTestCase("abcabcbb", "3", false);
+        p.AddTestCase("bbbbb", "1", false);
+        p.AddTestCase("pwwkew", "3", true);
+        p.Activate();
+        return p;
+    });
+
+    // 5. Invert Binary Tree [Hard]
+    await SeedProblemAsync("invert-binary-tree", () =>
+    {
+        var p = CodeClash.Domain.Entities.Problem.Create(
+            "Invert Binary Tree",
+            CodeClash.Domain.Enums.Difficulty.Hard,
+            CodeClash.Domain.Enums.ProblemCategory.Trees,
+            "Given the root of a binary tree, invert the tree, and return its root.\n\n### Input Format:\n- A single line containing BFS array serialization (e.g., `[4,2,7,1,3,6,9]`).\n\n### Output Format:\n- BFS array serialization of the inverted tree (e.g., `[4,7,2,9,6,3,1]`).",
+            "[\"The number of nodes in the tree is in the range [0, 100].\", \"-100 <= Node.val <= 100\"]",
+            allowedLangs,
+            2000,
+            256,
+            adminUserId
+        );
+        p.AddTestCase("[4,2,7,1,3,6,9]", "[4,7,2,9,6,3,1]", false);
+        p.AddTestCase("[2,1,3]", "[2,3,1]", false);
+        p.AddTestCase("[]", "[]", true);
+        p.Activate();
+        return p;
+    });
 
     // ── Seed Language Templates (idempotent) ─────────────────────────────────
     // Insert wrapper templates for all existing problems if they don't exist yet.

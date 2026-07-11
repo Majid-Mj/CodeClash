@@ -37,6 +37,7 @@ public class CustomDuelController : ControllerBase
     public record DeclineRequest(Guid RoomId);
     public record ReadyRequest(Guid RoomId, Guid UserId, bool IsReady);
     public record StartRequest(Guid RoomId, string? Difficulty);
+    public record UpdateSettingsRequest(Guid RoomId, string Difficulty, string Language);
     public record LeaveRequest(Guid RoomId, Guid UserId);
 
     // POST /api/v1/customduel/invite
@@ -285,6 +286,29 @@ public class CustomDuelController : ControllerBase
             status = room.Status,
             problemId = problem.Id
         });
+    }
+
+    // POST /api/v1/customduel/settings
+    [HttpPost("settings")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateLobbySettings([FromBody] UpdateSettingsRequest request, CancellationToken ct)
+    {
+        var room = await _context.CustomDuelRooms.FirstOrDefaultAsync(r => r.Id == request.RoomId, ct);
+        if (room == null)
+        {
+            return NotFound(new { message = "Custom duel room not found." });
+        }
+
+        // Notify both players in the SignalR group of the updated settings
+        await _hubContext.Clients.Group(request.RoomId.ToString()).SendAsync("LobbySettingsUpdated", new
+        {
+            roomId = room.Id,
+            difficulty = request.Difficulty,
+            language = request.Language
+        }, ct);
+
+        return Ok(new { message = "Settings updated." });
     }
 
     // POST /api/v1/customduel/leave

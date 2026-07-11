@@ -203,12 +203,50 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
             {
                 activeDuel.Complete(request.UserId);
 
-                // Award 15 winner points to the winner user
                 var winnerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
-                if (winnerUser != null)
+                Guid loserUserId = activeDuel.HostUserId == request.UserId ? activeDuel.FriendUserId : activeDuel.HostUserId;
+                var loserUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == loserUserId, ct);
+
+                if (winnerUser != null && loserUser != null)
                 {
+                    // Update points for winner and loser
                     winnerUser.AddPoints(15);
-                    _logger.LogInformation("User {UserId} awarded 15 points for winning the custom duel {RoomId}", request.UserId, activeDuel.Id);
+                    int loserPrevPoints = loserUser.TotalPoints;
+                    int loserPointsChange = loserPrevPoints >= 10 ? -10 : -loserPrevPoints;
+                    loserUser.AddPoints(loserPointsChange);
+
+                    // Formatted duration
+                    var elapsed = DateTime.UtcNow - activeDuel.CreatedAt;
+                    string durationStr = $"{(int)elapsed.TotalMinutes}:{elapsed.Seconds:D2}";
+
+                    // Create BattleRecord for Winner
+                    var winnerRecord = BattleRecord.Create(
+                        userId: winnerUser.Id,
+                        opponentName: loserUser.Username,
+                        problemName: problem.Title,
+                        language: submission.Language,
+                        duration: durationStr,
+                        score: 100,
+                        isWin: true,
+                        eloChange: 15
+                    );
+
+                    // Create BattleRecord for Loser
+                    var loserRecord = BattleRecord.Create(
+                        userId: loserUser.Id,
+                        opponentName: winnerUser.Username,
+                        problemName: problem.Title,
+                        language: submission.Language,
+                        duration: durationStr,
+                        score: 0,
+                        isWin: false,
+                        eloChange: loserPointsChange
+                    );
+
+                    await _context.BattleRecords.AddAsync(winnerRecord, ct);
+                    await _context.BattleRecords.AddAsync(loserRecord, ct);
+
+                    _logger.LogInformation("User {UserId} awarded 15 points for winning, and loser {LoserId} adjusted by {LoserPointsChange} points in custom duel {RoomId}", request.UserId, loserUserId, loserPointsChange, activeDuel.Id);
                 }
 
                 // Send SignalR notification to the room group

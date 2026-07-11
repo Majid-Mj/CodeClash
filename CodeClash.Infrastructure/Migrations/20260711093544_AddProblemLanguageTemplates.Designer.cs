@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CodeClash.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260711092624_AddProblemLanguageTemplates")]
+    [Migration("20260711093544_AddProblemLanguageTemplates")]
     partial class AddProblemLanguageTemplates
     {
         /// <inheritdoc />

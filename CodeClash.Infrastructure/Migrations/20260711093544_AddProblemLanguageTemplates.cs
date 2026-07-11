@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,71 +11,7 @@ namespace CodeClash.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(
-                name: "TotalPoints",
-                table: "Users",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
-
-            migrationBuilder.CreateTable(
-                name: "BattleRecords",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    OpponentName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    ProblemName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Language = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Duration = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Score = table.Column<int>(type: "int", nullable: false),
-                    IsWin = table.Column<bool>(type: "bit", nullable: false),
-                    EloChange = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_BattleRecords", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_BattleRecords_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ChatSessions",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ProblemId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    LastActiveAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ChatSessions", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "KnowledgeChunks",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    EmbeddingJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Category = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_KnowledgeChunks", x => x.Id);
-                });
-
+            // ── ProblemLanguageTemplates (new table) ──────────────────────────
             migrationBuilder.CreateTable(
                 name: "ProblemLanguageTemplates",
                 columns: table => new
@@ -97,6 +33,7 @@ namespace CodeClash.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            // ── Tournaments (new table) ───────────────────────────────────────
             migrationBuilder.CreateTable(
                 name: "Tournaments",
                 columns: table => new
@@ -116,27 +53,7 @@ namespace CodeClash.Infrastructure.Migrations
                     table.PrimaryKey("PK_Tournaments", x => x.Id);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "ChatMessages",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SessionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Role = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ChatMessages", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ChatMessages_ChatSessions_SessionId",
-                        column: x => x.SessionId,
-                        principalTable: "ChatSessions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
+            // ── TournamentMatches (new table, NoAction on User FKs) ───────────
             migrationBuilder.CreateTable(
                 name: "TournamentMatches",
                 columns: table => new
@@ -167,6 +84,7 @@ namespace CodeClash.Infrastructure.Migrations
                         principalTable: "Tournaments",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    // NoAction on all User FKs to avoid SQL Server cascade cycle
                     table.ForeignKey(
                         name: "FK_TournamentMatches_Users_Player1Id",
                         column: x => x.Player1Id,
@@ -184,6 +102,7 @@ namespace CodeClash.Infrastructure.Migrations
                         principalColumn: "Id");
                 });
 
+            // ── TournamentRegistrations (new table) ───────────────────────────
             migrationBuilder.CreateTable(
                 name: "TournamentRegistrations",
                 columns: table => new
@@ -210,6 +129,7 @@ namespace CodeClash.Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            // ── TournamentResults (new table) ─────────────────────────────────
             migrationBuilder.CreateTable(
                 name: "TournamentResults",
                 columns: table => new
@@ -238,26 +158,7 @@ namespace CodeClash.Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_BattleRecords_UserId",
-                table: "BattleRecords",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ChatMessages_SessionId",
-                table: "ChatMessages",
-                column: "SessionId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ChatSessions_UserId",
-                table: "ChatSessions",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ChatSessions_UserId_ProblemId",
-                table: "ChatSessions",
-                columns: new[] { "UserId", "ProblemId" });
-
+            // ── Indexes ───────────────────────────────────────────────────────
             migrationBuilder.CreateIndex(
                 name: "IX_ProblemLanguageTemplates_ProblemId_Language",
                 table: "ProblemLanguageTemplates",
@@ -315,36 +216,11 @@ namespace CodeClash.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "BattleRecords");
-
-            migrationBuilder.DropTable(
-                name: "ChatMessages");
-
-            migrationBuilder.DropTable(
-                name: "KnowledgeChunks");
-
-            migrationBuilder.DropTable(
-                name: "ProblemLanguageTemplates");
-
-            migrationBuilder.DropTable(
-                name: "TournamentMatches");
-
-            migrationBuilder.DropTable(
-                name: "TournamentRegistrations");
-
-            migrationBuilder.DropTable(
-                name: "TournamentResults");
-
-            migrationBuilder.DropTable(
-                name: "ChatSessions");
-
-            migrationBuilder.DropTable(
-                name: "Tournaments");
-
-            migrationBuilder.DropColumn(
-                name: "TotalPoints",
-                table: "Users");
+            migrationBuilder.DropTable(name: "ProblemLanguageTemplates");
+            migrationBuilder.DropTable(name: "TournamentMatches");
+            migrationBuilder.DropTable(name: "TournamentRegistrations");
+            migrationBuilder.DropTable(name: "TournamentResults");
+            migrationBuilder.DropTable(name: "Tournaments");
         }
     }
 }

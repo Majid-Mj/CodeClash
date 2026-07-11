@@ -27,7 +27,7 @@ public interface IDockerExecutionService
     Task<ExecutionResult> ExecuteAsync(
         string sourceCode,
         string language,
-        string problemSlug,
+        string wrapperTemplate,
         List<DockerTestCaseDto> testCases,
         int timeLimitMs,
         int memoryLimitMb,

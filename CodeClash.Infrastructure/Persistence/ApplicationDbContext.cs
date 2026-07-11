@@ -14,9 +14,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
-    // ── Problems (new) ────────────────────────────────────────────────────────
+    // ── Problems ──────────────────────────────────────────────────────────────
     public DbSet<Problem> Problems => Set<Problem>();
     public DbSet<TestCase> TestCases => Set<TestCase>();
+    public DbSet<ProblemLanguageTemplate> ProblemLanguageTemplates => Set<ProblemLanguageTemplate>();
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<BattleRecord> BattleRecords => Set<BattleRecord>();
 

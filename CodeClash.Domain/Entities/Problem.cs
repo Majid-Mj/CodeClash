@@ -1,4 +1,4 @@
-﻿using CodeClash.Domain.Enums;
+using CodeClash.Domain.Enums;
 
 namespace CodeClash.Domain.Entities;
 
@@ -28,6 +28,9 @@ public class Problem
     // Navigation
     private readonly List<TestCase> _testCases = [];
     public IReadOnlyCollection<TestCase> TestCases => _testCases.AsReadOnly();
+
+    private readonly List<ProblemLanguageTemplate> _languageTemplates = [];
+    public IReadOnlyCollection<ProblemLanguageTemplate> LanguageTemplates => _languageTemplates.AsReadOnly();
 
     private Problem() { }
 
@@ -118,6 +121,23 @@ public class Problem
         _testCases.Add(tc);
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void AddLanguageTemplate(string language, string wrapperTemplate, string starterCode)
+    {
+        // Remove existing template for this language (upsert semantics)
+        var existing = _languageTemplates.FirstOrDefault(
+            t => t.Language.Equals(language, StringComparison.OrdinalIgnoreCase));
+        if (existing != null)
+            _languageTemplates.Remove(existing);
+
+        var template = ProblemLanguageTemplate.Create(Id, language, wrapperTemplate, starterCode);
+        _languageTemplates.Add(template);
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public ProblemLanguageTemplate? GetLanguageTemplate(string language)
+        => _languageTemplates.FirstOrDefault(
+            t => t.Language.Equals(language.ToLowerInvariant().Trim(), StringComparison.OrdinalIgnoreCase));
 
     public void ReplaceTestCases(IEnumerable<(string Input, string ExpectedOutput, bool IsHidden)> testCases)
     {

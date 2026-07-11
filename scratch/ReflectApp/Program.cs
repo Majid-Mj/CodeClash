@@ -12,18 +12,12 @@ class Program
             {
                 conn.Open();
                 var selectCmd = conn.CreateCommand();
-                selectCmd.CommandText = "SELECT Id, ProblemId, Language, SourceCode, Status, RuntimeOutput, CompileOutput FROM Submissions WHERE Id = '580d964e-da41-42a7-a05b-62d96029093c'";
+                selectCmd.CommandText = "SELECT Id, Title, Slug FROM Problems";
                 using (var reader = selectCmd.ExecuteReader())
                 {
-                    if (reader.Read())
+                    while (reader.Read())
                     {
-                        Console.WriteLine("-----------------------------");
-                        Console.WriteLine($"Submission ID: {reader["Id"]}");
-                        Console.WriteLine($"Language: {reader["Language"]}");
-                        Console.WriteLine($"Status: {reader["Status"]}");
-                        Console.WriteLine($"SourceCode:\n{reader["SourceCode"]}");
-                        Console.WriteLine($"CompileOutput:\n{reader["CompileOutput"]}");
-                        Console.WriteLine($"RuntimeOutput:\n{reader["RuntimeOutput"]}");
+                        Console.WriteLine($"Problem ID: {reader["Id"]}, Title: {reader["Title"]}, Slug: {reader["Slug"]}");
                     }
                 }
             }
@@ -34,3 +28,4 @@ class Program
         }
     }
 }
+

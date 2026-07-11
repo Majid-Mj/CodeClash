@@ -1,4 +1,4 @@
-﻿using CodeClash.Domain.Entities;
+using CodeClash.Domain.Entities;
 using CodeClash.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -112,9 +112,19 @@ public class ProblemConfiguration : IEntityTypeConfiguration<Problem>
                .HasForeignKey(tc => tc.ProblemId)
                .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasMany(p => p.LanguageTemplates)
+               .WithOne(lt => lt.Problem)
+               .HasForeignKey(lt => lt.ProblemId)
+               .OnDelete(DeleteBehavior.Cascade);
+
         // ── Backing field for private List<TestCase> ──────────────────────────
         builder.Navigation(p => p.TestCases)
                .UsePropertyAccessMode(PropertyAccessMode.Field)
                .HasField("_testCases");
+
+        // ── Backing field for private List<ProblemLanguageTemplate> ───────────
+        builder.Navigation(p => p.LanguageTemplates)
+               .UsePropertyAccessMode(PropertyAccessMode.Field)
+               .HasField("_languageTemplates");
     }
 }

@@ -414,6 +414,30 @@ await db.Database.MigrateAsync();
         await db.SaveChangesAsync();
     }
 
+    // ── Seed Language Templates (idempotent) ─────────────────────────────────
+    // Insert wrapper templates for all existing problems if they don't exist yet.
+    // This block runs on every startup and is safe to re-run (checks for existing records).
+    var problemsNeedingTemplates = await db.Problems
+        .Include(p => p.LanguageTemplates)
+        .Where(p => p.DeletedAt == null)
+        .ToListAsync();
+
+    foreach (var prob in problemsNeedingTemplates)
+    {
+        var templates = CodeClash.Infrastructure.Seeding.ProblemTemplateSeeder.GetTemplates(prob.Slug);
+        if (templates == null) continue;
+
+        foreach (var (lang, wrapper, starter) in templates)
+        {
+            var exists = prob.LanguageTemplates.Any(t =>
+                t.Language.Equals(lang, StringComparison.OrdinalIgnoreCase));
+            if (!exists)
+                prob.AddLanguageTemplate(lang, wrapper, starter);
+        }
+    }
+
+    await db.SaveChangesAsync();
+
 // ── 8. Middleware pipeline ────────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseStaticFiles();

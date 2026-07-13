@@ -104,7 +104,7 @@ class Solution:
         ("javascript", """
 {{submission}}
 
-const line = require('fs').readFileSync('/dev/stdin','utf-8').trim();
+const line = require('fs').readFileSync(0,'utf-8').trim();
 if (line) {
     let nums = [];
     let target = 0;
@@ -297,7 +297,7 @@ class Solution:
         ("javascript", """
 {{submission}}
 
-const input = require('fs').readFileSync('/dev/stdin','utf-8').trim();
+const input = require('fs').readFileSync(0,'utf-8').trim();
 if (input) {
     const x = parseInt(input, 10);
     const res = isPalindrome(x);
@@ -409,7 +409,7 @@ class Solution:
         ("javascript", """
 {{submission}}
 
-const input = require('fs').readFileSync('/dev/stdin','utf-8').trim();
+const input = require('fs').readFileSync(0,'utf-8').trim();
 const res = isValid(input);
 console.log(res.toString());
 """,
@@ -517,7 +517,7 @@ class Solution:
         ("javascript", """
 {{submission}}
 
-const input = require('fs').readFileSync('/dev/stdin','utf-8').trim();
+const input = require('fs').readFileSync(0,'utf-8').trim();
 const res = lengthOfLongestSubstring(input);
 console.log(res);
 """,
@@ -741,7 +741,7 @@ function serialize(root) {
 
 {{submission}}
 
-const input = require('fs').readFileSync('/dev/stdin','utf-8').trim();
+const input = require('fs').readFileSync(0,'utf-8').trim();
 if (input) {
     const root = deserialize(input);
     const result = invertTree(root);

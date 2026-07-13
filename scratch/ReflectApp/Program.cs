@@ -12,12 +12,12 @@ class Program
             {
                 conn.Open();
                 var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT p.Title, tc.Input, tc.ExpectedOutput, tc.IsHidden FROM TestCases tc JOIN Problems p ON tc.ProblemId = p.Id WHERE p.Slug = 'two-sum'";
+                cmd.CommandText = "SELECT p.Title, p.Slug, tc.Input, tc.ExpectedOutput FROM TestCases tc JOIN Problems p ON tc.ProblemId = p.Id";
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        Console.WriteLine($"Problem: {reader["Title"]} | Input: {reader["Input"]} | Expected: {reader["ExpectedOutput"]} | Hidden: {reader["IsHidden"]}");
+                        Console.WriteLine($"Problem: {reader["Title"]} ({reader["Slug"]}) | Input: {reader["Input"]} | Expected: {reader["ExpectedOutput"]}");
                     }
                 }
             }

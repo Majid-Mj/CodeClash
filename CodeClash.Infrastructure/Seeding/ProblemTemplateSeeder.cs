@@ -378,6 +378,10 @@ using System;
 public class Driver {
     public static void Main() {
         string s = Console.ReadLine() ?? "";
+        s = s.Trim();
+        if (s.StartsWith("\"") && s.EndsWith("\"") && s.Length >= 2) {
+            s = s.Substring(1, s.Length - 2);
+        }
         bool res = new Solution().IsValid(s);
         Console.WriteLine(res.ToString().ToLower());
     }
@@ -397,6 +401,8 @@ import sys
 {{submission}}
 
 s = sys.stdin.read().strip()
+if s.startswith('"') and s.endswith('"') and len(s) >= 2:
+    s = s[1:-1]
 res = Solution().isValid(s)
 print(str(res).lower())
 """,
@@ -409,7 +415,10 @@ class Solution:
         ("javascript", """
 {{submission}}
 
-const input = require('fs').readFileSync(0,'utf-8').trim();
+let input = require('fs').readFileSync(0,'utf-8').trim();
+if (input.startsWith('"') && input.endsWith('"') && input.length >= 2) {
+    input = input.substring(1, input.length - 1);
+}
 const res = isValid(input);
 console.log(res.toString());
 """,
@@ -430,9 +439,14 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        String s = sc.hasNextLine() ? sc.nextLine() : "";
-        boolean res = new Solution().isValid(s);
-        System.out.println(res);
+        if (sc.hasNextLine()) {
+            String s = sc.nextLine().trim();
+            if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2) {
+                s = s.substring(1, s.length() - 1);
+            }
+            boolean res = new Solution().isValid(s);
+            System.out.println(res);
+        }
     }
 }
 """,
@@ -454,6 +468,9 @@ using namespace std;
 int main() {
     string s;
     if (getline(cin, s)) {
+        if (s.length() >= 2 && s.front() == '\"' && s.back() == '\"') {
+            s = s.substr(1, s.length() - 2);
+        }
         Solution sol;
         bool res = sol.isValid(s);
         cout << (res ? "true" : "false") << endl;
@@ -486,6 +503,10 @@ using System;
 public class Driver {
     public static void Main() {
         string s = Console.ReadLine() ?? "";
+        s = s.Trim();
+        if (s.StartsWith("\"") && s.EndsWith("\"") && s.Length >= 2) {
+            s = s.Substring(1, s.Length - 2);
+        }
         int res = new Solution().LengthOfLongestSubstring(s);
         Console.WriteLine(res);
     }
@@ -505,6 +526,8 @@ import sys
 {{submission}}
 
 s = sys.stdin.read().strip()
+if s.startswith('"') and s.endswith('"') and len(s) >= 2:
+    s = s[1:-1]
 res = Solution().lengthOfLongestSubstring(s)
 print(res)
 """,
@@ -517,7 +540,10 @@ class Solution:
         ("javascript", """
 {{submission}}
 
-const input = require('fs').readFileSync(0,'utf-8').trim();
+let input = require('fs').readFileSync(0,'utf-8').trim();
+if (input.startsWith('"') && input.endsWith('"') && input.length >= 2) {
+    input = input.substring(1, input.length - 1);
+}
 const res = lengthOfLongestSubstring(input);
 console.log(res);
 """,
@@ -538,9 +564,14 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        String s = sc.hasNextLine() ? sc.nextLine() : "";
-        int res = new Solution().lengthOfLongestSubstring(s);
-        System.out.println(res);
+        if (sc.hasNextLine()) {
+            String s = sc.nextLine().trim();
+            if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2) {
+                s = s.substring(1, s.length() - 1);
+            }
+            int res = new Solution().lengthOfLongestSubstring(s);
+            System.out.println(res);
+        }
     }
 }
 """,
@@ -562,6 +593,9 @@ using namespace std;
 int main() {
     string s;
     if (getline(cin, s)) {
+        if (s.length() >= 2 && s.front() == '\"' && s.back() == '\"') {
+            s = s.substr(1, s.length() - 2);
+        }
         Solution sol;
         int res = sol.lengthOfLongestSubstring(s);
         cout << res << endl;

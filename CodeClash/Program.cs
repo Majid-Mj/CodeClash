@@ -488,10 +488,16 @@ await db.Database.MigrateAsync();
 
         foreach (var (lang, wrapper, starter) in templates)
         {
-            var exists = prob.LanguageTemplates.Any(t =>
+            var existing = prob.LanguageTemplates.FirstOrDefault(t =>
                 t.Language.Equals(lang, StringComparison.OrdinalIgnoreCase));
-            if (!exists)
+            if (existing == null)
+            {
                 prob.AddLanguageTemplate(lang, wrapper, starter);
+            }
+            else
+            {
+                existing.Update(wrapper, starter);
+            }
         }
     }
 

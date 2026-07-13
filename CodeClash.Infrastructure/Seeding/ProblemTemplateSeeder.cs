@@ -34,6 +34,7 @@ public static class ProblemTemplateSeeder
         ("csharp", """
 using System;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 {{submission}}
 
@@ -41,12 +42,26 @@ public class Driver {
     public static void Main() {
         string line = Console.ReadLine() ?? "";
         if (string.IsNullOrEmpty(line)) return;
-        int target = int.Parse(line.Trim().Split(' ')[0]);
-        string[] parts = line.Trim().Split(' ');
-        int[] nums = new int[parts.Length - 1];
-        for (int i = 0; i < nums.Length; i++) nums[i] = int.Parse(parts[i + 1]);
+        
+        int[] nums;
+        int target;
+        
+        if (line.Contains("nums") && line.Contains("target")) {
+            var numsMatch = Regex.Match(line, @"nums\s*=\s*\[([^\]]*)\]");
+            nums = numsMatch.Success && !string.IsNullOrWhiteSpace(numsMatch.Groups[1].Value)
+                ? numsMatch.Groups[1].Value.Split(',').Select(x => int.Parse(x.Trim())).ToArray()
+                : new int[0];
+            var targetMatch = Regex.Match(line, @"target\s*=\s*(-?\d+)");
+            target = targetMatch.Success ? int.Parse(targetMatch.Groups[1].Value) : 0;
+        } else {
+            string[] parts = line.Trim().Split(' ');
+            target = int.Parse(parts[0]);
+            nums = new int[parts.Length - 1];
+            for (int i = 0; i < nums.Length; i++) nums[i] = int.Parse(parts[i + 1]);
+        }
+        
         int[] res = new Solution().TwoSum(nums, target);
-        Console.WriteLine(res[0] + " " + res[1]);
+        Console.WriteLine($"[ {res[0]}, {res[1]} ]");
     }
 }
 """,
@@ -61,16 +76,24 @@ public class Solution {
 
         ("python", """
 import sys
+import re
 
 {{submission}}
 
 line = sys.stdin.read().strip()
 if line:
-    parts = line.split()
-    target = int(parts[0])
-    nums = [int(x) for x in parts[1:]]
+    if "nums" in line and "target" in line:
+        nums_match = re.search(r'nums\s*=\s*\[([^\]]*)\]', line)
+        nums = [int(x.strip()) for x in nums_match.group(1).split(',')] if nums_match and nums_match.group(1).strip() else []
+        target_match = re.search(r'target\s*=\s*(-?\d+)', line)
+        target = int(target_match.group(1)) if target_match else 0
+    else:
+        parts = line.split()
+        target = int(parts[0])
+        nums = [int(x) for x in parts[1:]]
+        
     res = Solution().twoSum(nums, target)
-    print(res[0], res[1])
+    print(f"[ {res[0]}, {res[1]} ]")
 """,
         """
 class Solution:
@@ -81,11 +104,25 @@ class Solution:
         ("javascript", """
 {{submission}}
 
-const lines = require('fs').readFileSync('/dev/stdin','utf-8').trim().split(' ');
-const target = parseInt(lines[0]);
-const nums = lines.slice(1).map(Number);
-const res = twoSum(nums, target);
-console.log(res[0] + ' ' + res[1]);
+const line = require('fs').readFileSync('/dev/stdin','utf-8').trim();
+if (line) {
+    let nums = [];
+    let target = 0;
+    
+    if (line.includes("nums") && line.includes("target")) {
+        const numsMatch = line.match(/nums\s*=\s*\[([^\]]*)\]/);
+        nums = numsMatch && numsMatch[1].trim() ? numsMatch[1].split(',').map(Number) : [];
+        const targetMatch = line.match(/target\s*=\s*(-?\d+)/);
+        target = targetMatch ? parseInt(targetMatch[1]) : 0;
+    } else {
+        const parts = line.split(' ');
+        target = parseInt(parts[0]);
+        nums = parts.slice(1).map(Number);
+    }
+    
+    const res = twoSum(nums, target);
+    console.log(`[ ${res[0]}, ${res[1]} ]`);
+}
 """,
         """
 /**
@@ -102,17 +139,45 @@ var twoSum = function(nums, target) {
 {{submission}}
 
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         if (sc.hasNextLine()) {
-            String[] parts = sc.nextLine().trim().split(" ");
-            int target = Integer.parseInt(parts[0]);
-            int[] nums = new int[parts.length - 1];
-            for (int i = 0; i < nums.length; i++) nums[i] = Integer.parseInt(parts[i+1]);
+            String line = sc.nextLine().trim();
+            int[] nums;
+            int target;
+            
+            if (line.contains("nums") && line.contains("target")) {
+                Pattern numsPat = Pattern.compile("nums\\s*=\\s*\\[([^\\]]*)\\]");
+                Matcher numsMat = numsPat.matcher(line);
+                if (numsMat.find() && !numsMat.group(1).trim().isEmpty()) {
+                    String[] parts = numsMat.group(1).split(",");
+                    nums = new int[parts.length];
+                    for (int i = 0; i < parts.length; i++) {
+                        nums[i] = Integer.parseInt(parts[i].trim());
+                    }
+                } else {
+                    nums = new int[0];
+                }
+                
+                Pattern targetPat = Pattern.compile("target\\s*=\\s*(-?\\d+)");
+                Matcher targetMat = targetPat.matcher(line);
+                target = targetMat.find() ? Integer.parseInt(targetMat.group(1)) : 0;
+            } else {
+                String[] parts = line.split(" ");
+                target = Integer.parseInt(parts[0]);
+                nums = new int[parts.length - 1];
+                for (int i = 0; i < nums.length; i++) {
+                    nums[i] = Integer.parseInt(parts[i+1]);
+                }
+            }
+            
             int[] res = new Solution().twoSum(nums, target);
-            System.out.println(res[0] + " " + res[1]);
+            System.out.println("[ " + res[0] + ", " + res[1] + " ]");
         }
     }
 }
@@ -129,6 +194,8 @@ class Solution {
         ("cpp", """
 #include <iostream>
 #include <vector>
+#include <string>
+#include <regex>
 #include <sstream>
 using namespace std;
 
@@ -137,15 +204,34 @@ using namespace std;
 int main() {
     string line;
     if (getline(cin, line)) {
-        istringstream iss(line);
-        int target;
-        iss >> target;
         vector<int> nums;
-        int x;
-        while (iss >> x) nums.push_back(x);
+        int target = 0;
+        
+        if (line.find("nums") != string::npos && line.find("target") != string::npos) {
+            smatch m;
+            if (regex_search(line, m, regex("nums\\s*=\\s*\\[([^\\]]*)\\]"))) {
+                string numsStr = m[1].str();
+                stringstream ss(numsStr);
+                string item;
+                while (getline(ss, item, ',')) {
+                    if (!item.empty()) {
+                        nums.push_back(stoi(item));
+                    }
+                }
+            }
+            if (regex_search(line, m, regex("target\\s*=\\s*(-?\\d+)"))) {
+                target = stoi(m[1].str());
+            }
+        } else {
+            istringstream iss(line);
+            iss >> target;
+            int x;
+            while (iss >> x) nums.push_back(x);
+        }
+        
         Solution sol;
         vector<int> res = sol.twoSum(nums, target);
-        cout << res[0] << " " << res[1] << endl;
+        cout << "[ " << res[0] << ", " << res[1] << " ]" << endl;
     }
     return 0;
 }

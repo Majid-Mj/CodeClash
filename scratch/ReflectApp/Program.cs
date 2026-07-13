@@ -11,13 +11,13 @@ class Program
             try
             {
                 conn.Open();
-                var selectCmd = conn.CreateCommand();
-                selectCmd.CommandText = "SELECT Id, Title, Slug FROM Problems";
-                using (var reader = selectCmd.ExecuteReader())
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT p.Title, tc.Input, tc.ExpectedOutput, tc.IsHidden FROM TestCases tc JOIN Problems p ON tc.ProblemId = p.Id WHERE p.Slug = 'two-sum'";
+                using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        Console.WriteLine($"Problem ID: {reader["Id"]}, Title: {reader["Title"]}, Slug: {reader["Slug"]}");
+                        Console.WriteLine($"Problem: {reader["Title"]} | Input: {reader["Input"]} | Expected: {reader["ExpectedOutput"]} | Hidden: {reader["IsHidden"]}");
                     }
                 }
             }

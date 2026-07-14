@@ -3,6 +3,7 @@ using CodeClash.API.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using CodeClash.API.Middleware;
 using CodeClash.Application;
+using CodeClash.Application.Common.Interfaces;
 using CodeClash.Infrastructure;
 using CodeClash.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -21,6 +22,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddSingleton<IMatchmakingQueueManager, MatchmakingQueueManager>();
+builder.Services.AddScoped<IBattleResolutionService, CodeClash.API.Services.BattleResolutionService>();
 
 var homePath = Environment.GetEnvironmentVariable("HOME");
 var dpFolder = !string.IsNullOrEmpty(homePath)
@@ -525,5 +528,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
+app.MapHub<MatchmakingHub>("/hubs/matchmaking");
+app.MapHub<BattleHub>("/hubs/battle");
 
 app.Run();

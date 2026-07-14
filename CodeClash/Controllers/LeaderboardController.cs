@@ -40,7 +40,7 @@ public class LeaderboardController : ControllerBase
         var users = await _context.Users
             .AsNoTracking()
             .Where(u => u.IsActive)
-            .OrderByDescending(u => u.TotalPoints)
+            .OrderByDescending(u => u.Rating)
             .ThenBy(u => u.Username)
             .Take(100)
             .ToListAsync(ct);
@@ -50,7 +50,7 @@ public class LeaderboardController : ControllerBase
                 Id: user.Id,
                 Username: user.Username,
                 Email: user.Email,
-                Elo: user.TotalPoints, 
+                Elo: user.Rating, 
                 Country: "US" 
             );
         }).ToArray();

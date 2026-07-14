@@ -15,6 +15,7 @@ public class User
     public string? GithubId { get; private set; }
     public string? ProfileImageUrl { get; private set; }
     public int TotalPoints { get; private set; }
+    public int Rating { get; private set; } = 1500;
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
@@ -120,6 +121,13 @@ public class User
     public void AddPoints(int points)
     {
         TotalPoints += points;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateRating(int delta)
+    {
+        Rating += delta;
+        if (Rating < 0) Rating = 0;
         UpdatedAt = DateTime.UtcNow;
     }
 

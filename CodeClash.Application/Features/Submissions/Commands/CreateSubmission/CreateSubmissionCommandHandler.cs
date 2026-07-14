@@ -64,6 +64,8 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
 
         // 3 — Check if language is allowed
         var language = dto.Language.Trim().ToLowerInvariant();
+        if (language == "c#") language = "csharp";
+        if (language == "c++") language = "cpp";
         List<string> allowedLanguages = new();
         try
         {

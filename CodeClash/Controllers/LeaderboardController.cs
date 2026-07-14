@@ -158,43 +158,77 @@ public class LeaderboardController : ControllerBase
         ));
     }
 
-    // ─── GET /api/v1/leaderboard/recent-battles ──────────────────────────────
-    [HttpGet("recent-battles")]
+    // ─── GET /api/v1/leaderboard/friends ──────────────────────────────────────
+    [HttpGet("friends")]
     [Authorize]
     [ProducesResponseType(typeof(LeaderboardUserDto[]), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetRecentBattleOpponents(CancellationToken ct)
+    public async Task<IActionResult> GetFriendsLeaderboard(CancellationToken ct)
     {
         var userId = User.GetUserId();
 
+        // 1. Get custom duel room friend/host user IDs
+        var customDuelFriendIds = await _context.CustomDuelRooms
+            .AsNoTracking()
+            .Where(r => r.HostUserId == userId)
+            .Select(r => r.FriendUserId)
+            .ToListAsync(ct);
+
+        var customDuelHostIds = await _context.CustomDuelRooms
+            .AsNoTracking()
+            .Where(r => r.FriendUserId == userId)
+            .Select(r => r.HostUserId)
+            .ToListAsync(ct);
+
+        // 2. Get opponents from matches
         var myBattleIds = await _context.BattleParticipants
             .AsNoTracking()
             .Where(bp => bp.UserId == userId)
             .Select(bp => bp.BattleId)
             .ToListAsync(ct);
 
-        if (myBattleIds.Count == 0)
-            return Ok(Array.Empty<LeaderboardUserDto>());
-
         var opponentIds = await _context.BattleParticipants
             .AsNoTracking()
             .Where(bp => myBattleIds.Contains(bp.BattleId) && bp.UserId != userId)
             .Select(bp => bp.UserId)
-            .Distinct()
             .ToListAsync(ct);
 
-        if (opponentIds.Count == 0)
-            return Ok(Array.Empty<LeaderboardUserDto>());
+        // Combine all unique user IDs
+        var matchedUserIds = customDuelFriendIds
+            .Concat(customDuelHostIds)
+            .Concat(opponentIds)
+            .Where(id => id != userId)
+            .Distinct()
+            .ToList();
 
-        var opponents = await _context.Users
+        // 3. Fallback padding if we don't have enough matched users
+        if (matchedUserIds.Count < 10)
+        {
+            var topUserIds = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.IsActive && u.Id != userId)
+                .OrderByDescending(u => u.TotalPoints)
+                .Select(u => u.Id)
+                .Take(15)
+                .ToListAsync(ct);
+
+            matchedUserIds = matchedUserIds.Concat(topUserIds).Distinct().Take(15).ToList();
+        }
+
+        // Include current user in their friends leaderboard so they can compare themselves!
+        if (!matchedUserIds.Contains(userId))
+        {
+            matchedUserIds.Add(userId);
+        }
+
+        var friends = await _context.Users
             .AsNoTracking()
-            .Where(u => opponentIds.Contains(u.Id) && u.IsActive)
+            .Where(u => matchedUserIds.Contains(u.Id) && u.IsActive)
             .OrderByDescending(u => u.TotalPoints)
             .ThenByDescending(u => u.Rating)
-            .Take(50)
             .ToListAsync(ct);
 
-        var enriched = await EnrichUsersAsync(opponentIds.ToList(), ct);
-        return Ok(BuildDtos(opponents, enriched));
+        var enriched = await EnrichUsersAsync(matchedUserIds, ct);
+        return Ok(BuildDtos(friends, enriched));
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

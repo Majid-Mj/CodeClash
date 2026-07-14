@@ -110,7 +110,8 @@ public class BattleResolutionService : IBattleResolutionService
             {
                 winnerId = winnerId,
                 winnerDelta = winnerDelta,
-                loserDelta = loserDelta
+                loserDelta = loserDelta,
+                isSurrender = language == "N/A"
             });
         }
         catch

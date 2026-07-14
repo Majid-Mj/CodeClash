@@ -51,6 +51,11 @@ public class BattleHub : Hub
         await Clients.OthersInGroup(battleIdStr).SendAsync("OpponentCodeUpdated", sourceCode);
     }
 
+    public async Task SendProgressUpdate(string battleIdStr, int passedCount, int totalCount)
+    {
+        await Clients.OthersInGroup(battleIdStr).SendAsync("OpponentProgressUpdated", passedCount, totalCount);
+    }
+
     public async Task Surrender(string battleIdStr)
     {
         if (!Guid.TryParse(battleIdStr, out var battleId)) return;

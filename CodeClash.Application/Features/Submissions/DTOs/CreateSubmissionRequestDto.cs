@@ -5,5 +5,6 @@ namespace CodeClash.Application.Features.Submissions.DTOs;
 public record CreateSubmissionRequestDto(
     Guid ProblemId,
     string Language,
-    string SourceCode
+    string SourceCode,
+    Guid? BattleId = null
 );

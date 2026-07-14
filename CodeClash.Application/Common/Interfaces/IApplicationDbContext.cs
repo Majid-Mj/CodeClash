@@ -13,6 +13,8 @@ public interface IApplicationDbContext
     DbSet<TestCase> TestCases { get; }
     DbSet<Submission> Submissions { get; }
     DbSet<BattleRecord> BattleRecords { get; }
+    DbSet<Battle> Battles { get; }
+    DbSet<BattleParticipant> BattleParticipants { get; }
     // ── Notifications ──────────────────────────────────────────────────────────
     DbSet<Notification> Notifications { get; }
     

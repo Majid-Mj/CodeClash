@@ -10,5 +10,6 @@ public record ProfileDto(
     string? PhoneNumber,
     string? ProfileImageUrl,
     DateTime CreatedAt,
-    string Role
+    string Role,
+    int Rating
 );

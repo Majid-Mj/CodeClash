@@ -58,7 +58,8 @@ public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand,
             PhoneNumber: user.PhoneNumber,
             ProfileImageUrl: user.ProfileImageUrl,
             CreatedAt: user.CreatedAt,
-            Role: user.Role.ToString()
+            Role: user.Role.ToString(),
+            Rating: user.Rating
         );
 
         return Result<ProfileDto>.Success(profileDto, "Profile updated successfully.");

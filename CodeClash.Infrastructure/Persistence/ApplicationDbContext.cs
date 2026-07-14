@@ -20,6 +20,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<ProblemLanguageTemplate> ProblemLanguageTemplates => Set<ProblemLanguageTemplate>();
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<BattleRecord> BattleRecords => Set<BattleRecord>();
+    public DbSet<Battle> Battles => Set<Battle>();
+    public DbSet<BattleParticipant> BattleParticipants => Set<BattleParticipant>();
 
     // ── Notifications ──────────────────────────────────────────────────────────
     public DbSet<Notification> Notifications => Set<Notification>();

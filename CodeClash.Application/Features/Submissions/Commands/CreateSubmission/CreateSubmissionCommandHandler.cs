@@ -21,6 +21,7 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
     private readonly IDockerExecutionService _dockerService;
     private readonly ILogger<CreateSubmissionCommandHandler> _logger;
     private readonly ISystemLoggingService _loggingService;
+    private readonly IBattleResolutionService _battleResolutionService;
     private readonly IDuelNotificationService _duelNotificationService;
 
     public CreateSubmissionCommandHandler(
@@ -28,12 +29,14 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
         IDockerExecutionService dockerService,
         ILogger<CreateSubmissionCommandHandler> logger,
         ISystemLoggingService loggingService,
+        IBattleResolutionService battleResolutionService,
         IDuelNotificationService duelNotificationService)
     {
         _context = context;
         _dockerService = dockerService;
         _logger = logger;
         _loggingService = loggingService;
+        _battleResolutionService = battleResolutionService;
         _duelNotificationService = duelNotificationService;
     }
 
@@ -178,19 +181,26 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
 
         if (result.Status == SubmissionStatus.Accepted)
         {
-            var alreadySolved = await _context.Submissions.AnyAsync(s => 
-                s.UserId == request.UserId && 
-                s.ProblemId == problem.Id && 
-                s.Status == SubmissionStatus.Accepted &&
-                s.Id != submission.Id, ct);
-                
-            if (!alreadySolved)
+            if (dto.BattleId.HasValue)
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
-                if (user != null)
+                await _battleResolutionService.ResolveBattleAsync(dto.BattleId.Value, request.UserId, dto.Language);
+            }
+            else
+            {
+                var alreadySolved = await _context.Submissions.AnyAsync(s => 
+                    s.UserId == request.UserId && 
+                    s.ProblemId == problem.Id && 
+                    s.Status == SubmissionStatus.Accepted &&
+                    s.Id != submission.Id, ct);
+                    
+                if (!alreadySolved)
                 {
-                    user.AddPoints(3);
-                    _logger.LogInformation("User {UserId} awarded 3 points for solving problem {ProblemId}", request.UserId, problem.Id);
+                    var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
+                    if (user != null)
+                    {
+                        user.AddPoints(3);
+                        _logger.LogInformation("User {UserId} awarded 3 points for solving problem {ProblemId}", request.UserId, problem.Id);
+                    }
                 }
             }
 

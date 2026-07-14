@@ -66,11 +66,11 @@ public class MatchmakingQueueManager : IMatchmakingQueueManager
                 // Rating tolerance dynamically grows over queue wait time (+50 ELO limit increment every 5 seconds).
                 if (t1.UserId != t2.UserId && t1.Difficulty == t2.Difficulty && t1.PreferredLanguage.Equals(t2.PreferredLanguage, StringComparison.OrdinalIgnoreCase))
                 {
-                    double waitTimeSeconds = Math.Min(
+                    double waitTimeSeconds = Math.Max(
                         (DateTime.UtcNow - t1.QueuedAt).TotalSeconds,
                         (DateTime.UtcNow - t2.QueuedAt).TotalSeconds
                     );
-                    int maxEloTolerance = 100 + (int)(waitTimeSeconds / 5.0) * 50;
+                    int maxEloTolerance = 200 + (int)(waitTimeSeconds / 3.0) * 100;
 
                     if (Math.Abs(t1.Rating - t2.Rating) <= maxEloTolerance)
                     {

@@ -42,9 +42,10 @@ public class RunCodeCommandHandler : IRequestHandler<RunCodeCommand, Result<Subm
             return Result<SubmissionResponseDto>.Failure("User not found or unauthenticated.");
         }
 
-        // 2 — Check if problem exists
+        // 2 — Check if problem exists and load language templates
         var problem = await _context.Problems
             .Include(p => p.TestCases)
+            .Include(p => p.LanguageTemplates)
             .FirstOrDefaultAsync(p => p.Id == dto.ProblemId && p.DeletedAt == null, ct);
 
         if (problem == null)
@@ -82,14 +83,25 @@ public class RunCodeCommandHandler : IRequestHandler<RunCodeCommand, Result<Subm
             return Result<SubmissionResponseDto>.Failure("Problem has no test cases configured.");
         }
 
-        // 5 — Pass to Docker Execution Service
+        // 5 — Resolve wrapper template for this language
+        var languageTemplate = problem.LanguageTemplates
+            .FirstOrDefault(t => t.Language.Equals(language, StringComparison.OrdinalIgnoreCase));
+
+        var wrapperTemplate = languageTemplate?.WrapperTemplate ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(wrapperTemplate))
+        {
+            _logger.LogWarning("No wrapper template found for problem {ProblemId} language {Language}. Executing raw submission.", problem.Id, language);
+        }
+
+        // 6 — Pass to Docker Execution Service
         ExecutionResult result;
         try
         {
             result = await _dockerService.ExecuteAsync(
                 dto.SourceCode,
                 language,
-                problem.Slug,
+                wrapperTemplate,
                 testCaseDtos,
                 problem.TimeLimitMs,
                 problem.MemoryLimitMb,

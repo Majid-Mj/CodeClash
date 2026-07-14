@@ -1,4 +1,12 @@
-﻿namespace CodeClash.Application.Features.Problems.DTOs;
+using System;
+using System.Collections.Generic;
+
+namespace CodeClash.Application.Features.Problems.DTOs;
+
+public record ProblemLanguageTemplateDto(
+    string Language,
+    string StarterCode
+);
 
 /// <summary>Full problem detail returned from GetProblemById.</summary>
 public record ProblemDetailDto(
@@ -15,5 +23,6 @@ public record ProblemDetailDto(
     bool IsActive,
     string CreatedBy,
     DateTime CreatedAt,
-    List<TestCaseDto> TestCases
-);
+    List<TestCaseDto> TestCases,
+    List<ProblemLanguageTemplateDto> LanguageTemplates
+);

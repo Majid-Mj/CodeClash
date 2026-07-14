@@ -20,25 +20,28 @@ public class TournamentMatchConfiguration : IEntityTypeConfiguration<TournamentM
             .HasConversion(r => r.ToString(), r => Enum.Parse<RoundType>(r))
             .HasMaxLength(30);
 
-        // Relationships
+        // ── Relationships ─────────────────────────────────────────────────────
+        // SQL Server does not allow multiple CASCADE / SET NULL paths from the
+        // same parent table (Users) to the same child table. Use NoAction here
+        // so EF handles nullification in memory before SaveChanges is called.
         builder.HasOne(tm => tm.Player1)
             .WithMany()
             .HasForeignKey(tm => tm.Player1Id)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(tm => tm.Player2)
             .WithMany()
             .HasForeignKey(tm => tm.Player2Id)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(tm => tm.Winner)
             .WithMany()
             .HasForeignKey(tm => tm.WinnerId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(tm => tm.AssignedProblem)
             .WithMany()
             .HasForeignKey(tm => tm.AssignedProblemId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

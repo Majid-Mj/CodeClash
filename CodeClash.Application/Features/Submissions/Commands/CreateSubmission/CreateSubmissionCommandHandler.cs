@@ -22,19 +22,22 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
     private readonly ILogger<CreateSubmissionCommandHandler> _logger;
     private readonly ISystemLoggingService _loggingService;
     private readonly IBattleResolutionService _battleResolutionService;
+    private readonly IDuelNotificationService _duelNotificationService;
 
     public CreateSubmissionCommandHandler(
         IApplicationDbContext context,
         IDockerExecutionService dockerService,
         ILogger<CreateSubmissionCommandHandler> logger,
         ISystemLoggingService loggingService,
-        IBattleResolutionService battleResolutionService)
+        IBattleResolutionService battleResolutionService,
+        IDuelNotificationService duelNotificationService)
     {
         _context = context;
         _dockerService = dockerService;
         _logger = logger;
         _loggingService = loggingService;
         _battleResolutionService = battleResolutionService;
+        _duelNotificationService = duelNotificationService;
     }
 
     public async Task<Result<SubmissionResponseDto>> Handle(CreateSubmissionCommand request, CancellationToken ct)
@@ -48,9 +51,10 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
             return Result<SubmissionResponseDto>.Failure("User not found or unauthenticated.");
         }
 
-        // 2 — Check if problem exists
+        // 2 — Check if problem exists and load language templates
         var problem = await _context.Problems
             .Include(p => p.TestCases)
+            .Include(p => p.LanguageTemplates)
             .FirstOrDefaultAsync(p => p.Id == dto.ProblemId && p.DeletedAt == null, ct);
 
         if (problem == null)
@@ -109,14 +113,25 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
             return Result<SubmissionResponseDto>.Failure("Problem has no test cases configured.");
         }
 
-        // 6 — Pass to Docker Execution Service
+        // 6 — Resolve wrapper template for this language
+        var languageTemplate = problem.LanguageTemplates
+            .FirstOrDefault(t => t.Language.Equals(language, StringComparison.OrdinalIgnoreCase));
+
+        var wrapperTemplate = languageTemplate?.WrapperTemplate ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(wrapperTemplate))
+        {
+            _logger.LogWarning("No wrapper template found for problem {ProblemId} language {Language}. Code will be executed raw.", problem.Id, language);
+        }
+
+        // 7 — Pass to Docker Execution Service
         ExecutionResult result;
         try
         {
             result = await _dockerService.ExecuteAsync(
                 submission.SourceCode,
                 submission.Language,
-                problem.Slug,
+                wrapperTemplate,
                 testCaseDtos,
                 problem.TimeLimitMs,
                 problem.MemoryLimitMb,
@@ -188,7 +203,68 @@ public class CreateSubmissionCommandHandler : IRequestHandler<CreateSubmissionCo
                     }
                 }
             }
+
+            // ─── Custom Duel Battle Win Handling ───
+            var activeDuel = await _context.CustomDuelRooms
+                .FirstOrDefaultAsync(r => r.Status == "Started" && 
+                                          r.SelectedProblemId == problem.Id &&
+                                          (r.HostUserId == request.UserId || r.FriendUserId == request.UserId), ct);
+            if (activeDuel != null)
+            {
+                activeDuel.Complete(request.UserId);
+
+                var winnerUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
+                Guid loserUserId = activeDuel.HostUserId == request.UserId ? activeDuel.FriendUserId : activeDuel.HostUserId;
+                var loserUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == loserUserId, ct);
+
+                if (winnerUser != null && loserUser != null)
+                {
+                    // Update points for winner and loser
+                    winnerUser.AddPoints(15);
+                    int loserPrevPoints = loserUser.TotalPoints;
+                    int loserPointsChange = loserPrevPoints >= 10 ? -10 : -loserPrevPoints;
+                    loserUser.AddPoints(loserPointsChange);
+
+                    // Formatted duration
+                    var elapsed = DateTime.UtcNow - activeDuel.CreatedAt;
+                    string durationStr = $"{(int)elapsed.TotalMinutes}:{elapsed.Seconds:D2}";
+
+                    // Create BattleRecord for Winner
+                    var winnerRecord = BattleRecord.Create(
+                        userId: winnerUser.Id,
+                        opponentName: loserUser.Username,
+                        problemName: problem.Title,
+                        language: submission.Language,
+                        duration: durationStr,
+                        score: 100,
+                        isWin: true,
+                        eloChange: 15
+                    );
+
+                    // Create BattleRecord for Loser
+                    var loserRecord = BattleRecord.Create(
+                        userId: loserUser.Id,
+                        opponentName: winnerUser.Username,
+                        problemName: problem.Title,
+                        language: submission.Language,
+                        duration: durationStr,
+                        score: 0,
+                        isWin: false,
+                        eloChange: loserPointsChange
+                    );
+
+                    await _context.BattleRecords.AddAsync(winnerRecord, ct);
+                    await _context.BattleRecords.AddAsync(loserRecord, ct);
+
+                    _logger.LogInformation("User {UserId} awarded 15 points for winning, and loser {LoserId} adjusted by {LoserPointsChange} points in custom duel {RoomId}", request.UserId, loserUserId, loserPointsChange, activeDuel.Id);
+                }
+
+                // Send SignalR notification to the room group
+                await _duelNotificationService.NotifyDuelEndedAsync(activeDuel.Id, request.UserId, ct);
+            }
         }
+
+
 
         await _context.SaveChangesAsync(ct);
 

@@ -14,9 +14,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
-    // ── Problems (new) ────────────────────────────────────────────────────────
+    // ── Problems ──────────────────────────────────────────────────────────────
     public DbSet<Problem> Problems => Set<Problem>();
     public DbSet<TestCase> TestCases => Set<TestCase>();
+    public DbSet<ProblemLanguageTemplate> ProblemLanguageTemplates => Set<ProblemLanguageTemplate>();
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<BattleRecord> BattleRecords => Set<BattleRecord>();
     public DbSet<Battle> Battles => Set<Battle>();
@@ -30,13 +31,15 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<PromptHistory> PromptHistories => Set<PromptHistory>();
     public DbSet<AIUsageLog> AIUsageLogs => Set<AIUsageLog>();
 
-    // ── System Logs ──────────────────────────────────────────────────────────
-    public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
-    // ── RAG Chatbot ───────────────────────────────────────────────────────────────
+    // ── Chatbot ──────────────────────────────────────────────────────────────
+    public DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
     public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
-    public DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
 
+    // ── System Logs ──────────────────────────────────────────────────────────
+    public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
+
+    public DbSet<CustomDuelRoom> CustomDuelRooms => Set<CustomDuelRoom>();
 
     // ── Tournaments ───────────────────────────────────────────────────────────
     public DbSet<Tournament> Tournaments => Set<Tournament>();

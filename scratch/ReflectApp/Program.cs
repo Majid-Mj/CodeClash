@@ -11,19 +11,13 @@ class Program
             try
             {
                 conn.Open();
-                var selectCmd = conn.CreateCommand();
-                selectCmd.CommandText = "SELECT Id, ProblemId, Language, SourceCode, Status, RuntimeOutput, CompileOutput FROM Submissions WHERE Id = '580d964e-da41-42a7-a05b-62d96029093c'";
-                using (var reader = selectCmd.ExecuteReader())
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT p.Title, p.Slug, tc.Input, tc.ExpectedOutput FROM TestCases tc JOIN Problems p ON tc.ProblemId = p.Id";
+                using (var reader = cmd.ExecuteReader())
                 {
-                    if (reader.Read())
+                    while (reader.Read())
                     {
-                        Console.WriteLine("-----------------------------");
-                        Console.WriteLine($"Submission ID: {reader["Id"]}");
-                        Console.WriteLine($"Language: {reader["Language"]}");
-                        Console.WriteLine($"Status: {reader["Status"]}");
-                        Console.WriteLine($"SourceCode:\n{reader["SourceCode"]}");
-                        Console.WriteLine($"CompileOutput:\n{reader["CompileOutput"]}");
-                        Console.WriteLine($"RuntimeOutput:\n{reader["RuntimeOutput"]}");
+                        Console.WriteLine($"Problem: {reader["Title"]} ({reader["Slug"]}) | Input: {reader["Input"]} | Expected: {reader["ExpectedOutput"]}");
                     }
                 }
             }
@@ -34,3 +28,4 @@ class Program
         }
     }
 }
+

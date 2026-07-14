@@ -23,8 +23,15 @@ public interface IApplicationDbContext
     DbSet<PromptHistory> PromptHistories { get; }
     DbSet<AIUsageLog> AIUsageLogs { get; }
 
+    // ── Chatbot ──────────────────────────────────────────────────────────────
+    DbSet<KnowledgeChunk> KnowledgeChunks { get; }
+    DbSet<ChatSession> ChatSessions { get; }
+    DbSet<ChatMessage> ChatMessages { get; }
+
     // ── System Logs ──────────────────────────────────────────────────────────
     DbSet<SystemLog> SystemLogs { get; }
+
+    DbSet<CustomDuelRoom> CustomDuelRooms { get; }
     
     // ── Tournaments ───────────────────────────────────────────────────────────
     DbSet<Tournament> Tournaments { get; }

@@ -156,15 +156,22 @@ public class DockerExecutionService : IDockerExecutionService
                 var tc = testCases[i];
                 _logger.LogInformation("Test case {Index} (ID: {Id}) started.", i + 1, tc.Id);
 
-                var inputBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(tc.Input));
+                // Write testcase input to input.txt inside container using direct native archive extraction (100% robust for all sizes/charsets)
+                var inputTarStream = TarArchiveHelper.CreateTarStream(("input.txt", tc.Input));
+                await _dockerClient.Containers.ExtractArchiveToContainerAsync(
+                    containerId,
+                    new ContainerPathStatParameters { Path = "/app" },
+                    inputTarStream,
+                    ct);
+
                 var timeoutSec = (timeLimitMs + 999) / 1000;
 
+                // Run outer wrapper as root so we can read cgroups, but launch the target command under 'su nobody' for security/isolation
                 var testCmd = new[]
                 {
                     "sh", "-c",
-                    $@"echo '{inputBase64}' | base64 -d > /app/input.txt
-START_MEM=$$(cat /sys/fs/cgroup/memory.current 2>/dev/null || echo 0)
-timeout -s 9 {timeoutSec}s {runCmd} < /app/input.txt > /app/stdout.txt 2> /app/stderr.txt
+                    $@"START_MEM=$$(cat /sys/fs/cgroup/memory.current 2>/dev/null || echo 0)
+su nobody -s /bin/sh -c 'timeout -s 9 {timeoutSec}s {runCmd} < /app/input.txt' > /app/stdout.txt 2> /app/stderr.txt
 EXIT_CODE=$$?
 PEAK_MEM=$$(cat /sys/fs/cgroup/memory.peak 2>/dev/null || cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes 2>/dev/null || echo 0)
 MEM_USED=$$(($$PEAK_MEM - $$START_MEM))
@@ -185,8 +192,8 @@ cat /app/stderr.txt"
                     {
                         AttachStdout = true,
                         AttachStderr = true,
-                        Cmd = testCmd,
-                        User = "65534" // nobody
+                        Cmd = testCmd
+                        // User is omitted (runs outer script as root to read cgroups/write wrapper files, target runs as nobody)
                     },
                     ct);
 

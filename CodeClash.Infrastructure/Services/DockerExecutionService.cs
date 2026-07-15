@@ -156,7 +156,7 @@ public class DockerExecutionService : IDockerExecutionService
                 var tc = testCases[i];
                 _logger.LogInformation("Test case {Index} (ID: {Id}) started.", i + 1, tc.Id);
 
-                // Write testcase input to input.txt inside container using direct native archive extraction (100% robust for all sizes/charsets)
+                // Write testcase input to input.txt inside container
                 var inputTarStream = TarArchiveHelper.CreateTarStream(("input.txt", tc.Input));
                 await _dockerClient.Containers.ExtractArchiveToContainerAsync(
                     containerId,
@@ -164,84 +164,40 @@ public class DockerExecutionService : IDockerExecutionService
                     inputTarStream,
                     ct);
 
-                var timeoutSec = (timeLimitMs + 999) / 1000;
-
-                // Run outer wrapper as root so we can read cgroups, but launch the target command under 'su nobody' for security/isolation
+                // Run execution
+                var timeoutSec = (timeLimitMs + 999) / 1000; // ceiling to seconds
+                
+                // sh -c execution wrapper that redirects input/output and captures exit code securely
+                // Runs target code as nobody (UID 65534)
                 var testCmd = new[]
                 {
                     "sh", "-c",
-                    $@"START_MEM=$$(cat /sys/fs/cgroup/memory.current 2>/dev/null || echo 0)
-su nobody -s /bin/sh -c 'timeout -s 9 {timeoutSec}s {runCmd} < /app/input.txt' > /app/stdout.txt 2> /app/stderr.txt
-EXIT_CODE=$$?
-PEAK_MEM=$$(cat /sys/fs/cgroup/memory.peak 2>/dev/null || cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes 2>/dev/null || echo 0)
-MEM_USED=$$(($$PEAK_MEM - $$START_MEM))
-if [ $$MEM_USED -lt 0 ]; then MEM_USED=0; fi
-echo '===STATUS==='
-echo $$EXIT_CODE
-echo $$MEM_USED
-echo '===STDOUT==='
-cat /app/stdout.txt
-echo '===STDERR==='
-cat /app/stderr.txt"
+                    $"timeout -s 9 {timeoutSec}s {runCmd} < /app/input.txt > /app/stdout.txt 2> /app/stderr.txt; echo $? > /app/exitcode.txt"
                 };
 
                 var stopwatch = Stopwatch.StartNew();
-                var execConfig = await _dockerClient.Exec.ExecCreateContainerAsync(
-                    containerId,
-                    new ContainerExecCreateParameters
-                    {
-                        AttachStdout = true,
-                        AttachStderr = true,
-                        Cmd = testCmd
-                        // User is omitted (runs outer script as root to read cgroups/write wrapper files, target runs as nobody)
-                    },
-                    ct);
-
-                string execStdout;
-                string execStderr;
-                using (var stream = await _dockerClient.Exec.StartAndAttachContainerExecAsync(execConfig.ID, false, ct))
-                {
-                    var output = await stream.ReadOutputToEndAsync(ct);
-                    execStdout = output.stdout;
-                    execStderr = output.stderr;
-                }
+                // Execute command inside container as user 'nobody'
+                await RunCommandDetachedAndWaitAsync(_dockerClient, containerId, testCmd, user: "65534", ct: ct);
                 stopwatch.Stop();
 
                 var currentExecutionTime = (int)stopwatch.ElapsedMilliseconds;
 
-                var normalized = execStdout.Replace("\r\n", "\n");
-                var statusMarker = "===STATUS===\n";
-                var stdoutMarker = "===STDOUT===\n";
-                var stderrMarker = "===STDERR===\n";
+                // Read output, error, exit code directly from container files
+                var stdout = await ReadFileFromContainerAsync(containerId, "/app/stdout.txt", ct);
+                var stderr = await ReadFileFromContainerAsync(containerId, "/app/stderr.txt", ct);
+                var exitCodeStr = await ReadFileFromContainerAsync(containerId, "/app/exitcode.txt", ct);
 
-                int statusIdx = normalized.IndexOf(statusMarker);
-                int stdoutIdx = normalized.IndexOf(stdoutMarker);
-                int stderrIdx = normalized.IndexOf(stderrMarker);
-
-                int exitCode = 0;
-                long peakMemoryBytes = 0L;
-                string stdout = "";
-                string stderr = "";
-
-                if (statusIdx != -1 && stdoutIdx != -1 && stderrIdx != -1)
+                // Read peak memory by outputting to a file first
+                var memCmd = new[]
                 {
-                    var statusSection = normalized.Substring(statusIdx + statusMarker.Length, stdoutIdx - (statusIdx + statusMarker.Length)).Trim();
-                    stdout = normalized.Substring(stdoutIdx + stdoutMarker.Length, stderrIdx - (stdoutIdx + stdoutMarker.Length));
-                    stderr = normalized.Substring(stderrIdx + stderrMarker.Length);
+                    "sh", "-c",
+                    "(cat /sys/fs/cgroup/memory.peak 2>/dev/null || cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes 2>/dev/null || echo 0) > /app/memory.txt"
+                };
+                await RunCommandDetachedAndWaitAsync(_dockerClient, containerId, memCmd, ct: ct);
+                var memStr = await ReadFileFromContainerAsync(containerId, "/app/memory.txt", ct);
 
-                    var statusLines = statusSection.Split('\n');
-                    if (statusLines.Length >= 2)
-                    {
-                        int.TryParse(statusLines[0].Trim(), out exitCode);
-                        long.TryParse(statusLines[1].Trim(), out peakMemoryBytes);
-                    }
-                }
-                else
-                {
-                    _logger.LogWarning("Execution output format invalid. Raw output: {Raw}", execStdout);
-                    exitCode = 1;
-                    stderr = string.IsNullOrEmpty(execStderr) ? execStdout : execStderr;
-                }
+                int.TryParse(exitCodeStr.Trim(), out var exitCode);
+                long.TryParse(memStr.Trim(), out var peakMemoryBytes);
 
                 _logger.LogInformation("Test case {Index} finished. Time: {Time}ms, ExitCode: {ExitCode}, PeakMemory: {Memory} bytes.", 
                     i + 1, currentExecutionTime, exitCode, peakMemoryBytes);
@@ -251,7 +207,7 @@ cat /app/stderr.txt"
                 var tcVerdict = SubmissionStatus.Accepted;
 
                 // 1. Check Time Limit Exceeded
-                if (currentExecutionTime > timeLimitMs || exitCode == 124 || (exitCode == 137 && peakMemoryBytes <= (long)memoryLimitMb * 1024 * 1024))
+                if (currentExecutionTime > timeLimitMs || exitCode == 124 || exitCode == 137 && stopwatch.ElapsedMilliseconds >= timeLimitMs)
                 {
                     tcVerdict = SubmissionStatus.TimeLimitExceeded;
                     tcStatus = "Time Limit Exceeded";
@@ -283,6 +239,8 @@ cat /app/stderr.txt"
                 executionTimeMs = Math.Max(executionTimeMs, currentExecutionTime);
                 maxMemoryBytes = Math.Max(maxMemoryBytes, peakMemoryBytes);
 
+                // We only want hidden testcase details obscured in response if necessary,
+                // but the overall judge status stops or becomes the worst verdict.
                 testCaseResults.Add(new TestCaseResultDto(
                     tc.Id,
                     tcStatus,
@@ -295,6 +253,7 @@ cat /app/stderr.txt"
                 if (tcVerdict != SubmissionStatus.Accepted)
                 {
                     finalStatus = tcVerdict;
+                    // Add remaining test cases as Skipped to maintain the full list of test cases in the response
                     for (int j = i + 1; j < testCases.Count; j++)
                     {
                         testCaseResults.Add(new TestCaseResultDto(
@@ -306,6 +265,7 @@ cat /app/stderr.txt"
                             0
                         ));
                     }
+                    // Stop on first failed test case to match standard competitive programming behavior
                     break;
                 }
             }

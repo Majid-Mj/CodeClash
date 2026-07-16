@@ -1,0 +1,49 @@
+using CodeClash.Application.Common.Interfaces;
+using CodeClash.Domain.Enums;
+using MediatR;
+
+namespace CodeClash.Application.Features.Tournaments.Commands.ScheduleMatch;
+
+public class ScheduleMatchCommandHandler : IRequestHandler<ScheduleMatchCommand>
+{
+    private readonly ITournamentRepository _tournamentRepository;
+    private readonly IApplicationDbContext _context;
+    private readonly ITournamentNotificationService _tournamentNotificationService;
+
+    public ScheduleMatchCommandHandler(
+        ITournamentRepository tournamentRepository,
+        IApplicationDbContext context,
+        ITournamentNotificationService tournamentNotificationService)
+    {
+        _tournamentRepository = tournamentRepository;
+        _context = context;
+        _tournamentNotificationService = tournamentNotificationService;
+    }
+
+    public async Task Handle(ScheduleMatchCommand request, CancellationToken cancellationToken)
+    {
+        var tournament = await _tournamentRepository.GetByIdWithDetailsAsync(request.TournamentId, cancellationToken);
+        if (tournament == null)
+        {
+            throw new KeyNotFoundException($"Tournament with Id {request.TournamentId} not found.");
+        }
+
+        var match = tournament.Matches.FirstOrDefault(m => m.Id == request.MatchId);
+        if (match == null)
+        {
+            throw new KeyNotFoundException($"Match with Id {request.MatchId} not found.");
+        }
+
+        if (match.Status != MatchStatus.Scheduled)
+        {
+            throw new InvalidOperationException("Only scheduled matches can have their time modified.");
+        }
+
+        match.SetScheduledTime(request.ScheduledTime);
+
+        await _tournamentRepository.UpdateAsync(tournament, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        await _tournamentNotificationService.NotifyBracketUpdatedAsync(tournament.Id);
+    }
+}

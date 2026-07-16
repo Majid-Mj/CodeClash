@@ -52,6 +52,22 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         base.OnModelCreating(builder);
     }
 
-
-
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State == EntityState.Modified)
+            {
+                if (entry.Entity is TournamentRegistration)
+                {
+                    entry.State = EntityState.Added;
+                }
+                else if (entry.Entity is TournamentResult)
+                {
+                    entry.State = EntityState.Added;
+                }
+            }
+        }
+        return await base.SaveChangesAsync(cancellationToken);
+    }
 }

@@ -10,6 +10,7 @@ public class TournamentMatch
     public Guid? Player2Id { get; private set; }
     public Guid? WinnerId { get; private set; }
     public Guid? AssignedProblemId { get; private set; }
+    public Guid? BattleId { get; private set; }
     
     public MatchStatus Status { get; private set; }
     public RoundType Round { get; private set; }
@@ -23,6 +24,7 @@ public class TournamentMatch
     public User? Player2 { get; private set; }
     public User? Winner { get; private set; }
     public Problem? AssignedProblem { get; private set; }
+    public Battle? Battle { get; private set; }
 
     private TournamentMatch() { }
 
@@ -41,15 +43,21 @@ public class TournamentMatch
             Player2Id = player2Id,
             Round = round,
             ScheduledTime = scheduledTime,
-            Status = MatchStatus.Upcoming
+            Status = MatchStatus.Scheduled
         };
     }
 
-    public void Start(Guid problemId)
+    public void Start(Guid problemId, Guid battleId)
     {
         AssignedProblemId = problemId;
-        Status = MatchStatus.Live;
+        BattleId = battleId;
+        Status = MatchStatus.InProgress;
         StartTime = DateTime.UtcNow;
+    }
+
+    public void SetScheduledTime(DateTime scheduledTime)
+    {
+        ScheduledTime = scheduledTime;
     }
 
     public void Finish(Guid winnerId)

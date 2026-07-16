@@ -30,7 +30,11 @@ public class GetTournamentByIdQueryHandler : IRequestHandler<GetTournamentByIdQu
             StartDate = tournament.StartDate,
             EndDate = tournament.EndDate,
             MaxParticipants = tournament.MaxParticipants,
+            MinRating = tournament.MinRating,
+            MaxRating = tournament.MaxRating,
             Status = tournament.Status.ToString(),
+            Language = tournament.Language,
+            ParticipantCount = tournament.Registrations.Count,
             CreatedAt = tournament.CreatedAt
         };
     }

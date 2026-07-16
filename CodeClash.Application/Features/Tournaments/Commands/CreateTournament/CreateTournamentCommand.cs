@@ -7,4 +7,7 @@ public record CreateTournamentCommand(
     string Description,
     DateTime StartDate,
     DateTime EndDate,
-    int MaxParticipants) : IRequest<Guid>;
+    int MaxParticipants,
+    int? MinRating = null,
+    int? MaxRating = null,
+    string? Language = null) : IRequest<Guid>;

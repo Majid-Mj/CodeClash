@@ -14,13 +14,19 @@ public class BattleResolutionService : IBattleResolutionService
 {
     private readonly IApplicationDbContext _context;
     private readonly IHubContext<BattleHub> _battleHubContext;
+    private readonly ITournamentNotificationService _tournamentNotificationService;
+    private readonly ITournamentMatchRewardService _rewardService;
 
     public BattleResolutionService(
         IApplicationDbContext context,
-        IHubContext<BattleHub> battleHubContext)
+        IHubContext<BattleHub> battleHubContext,
+        ITournamentNotificationService tournamentNotificationService,
+        ITournamentMatchRewardService rewardService)
     {
         _context = context;
         _battleHubContext = battleHubContext;
+        _tournamentNotificationService = tournamentNotificationService;
+        _rewardService = rewardService;
     }
 
     private static int GetKFactor(int rating, int totalBattles)
@@ -100,6 +106,63 @@ public class BattleResolutionService : IBattleResolutionService
                 var rec2 = BattleRecord.Create(loserPart.UserId, winnerUser?.Username ?? "Opponent", problemName, language, "N/A", 20, false, loserDelta);
                 _context.BattleRecords.Add(rec1);
                 _context.BattleRecords.Add(rec2);
+            }
+
+            if (battle.Mode == "Tournament")
+            {
+                var match = await _context.TournamentMatches
+                    .FirstOrDefaultAsync(m => m.BattleId == battleId);
+                
+                if (match != null)
+                {
+                    int affected = 0;
+                    if (dbContext != null)
+                    {
+                        affected = await dbContext.Database.ExecuteSqlRawAsync(
+                            "UPDATE TournamentMatches SET Status = 'Completed', WinnerId = {0}, EndTime = {1} WHERE Id = {2} AND (Status = 'InProgress' OR Status = 'Live')",
+                            new object[] { winnerId, DateTime.UtcNow, match.Id },
+                            default);
+                    }
+
+                    if (affected > 0)
+                    {
+                        var tournament = await _context.Tournaments
+                            .Include(t => t.Matches)
+                            .Include(t => t.Registrations)
+                            .FirstOrDefaultAsync(t => t.Id == match.TournamentId);
+
+                        if (tournament != null)
+                        {
+                            // Write per-match history + apply dampened ELO (K=16)
+                            await _rewardService.ApplyMatchRewardsAsync(
+                                match.Id, winnerId, tournament.Id, tournament.Language);
+
+                            tournament.SubmitMatchResult(match.Id, winnerId);
+
+                            // Broadcast bracket update
+                            await _tournamentNotificationService.NotifyBracketUpdatedAsync(tournament.Id);
+                            await _tournamentNotificationService.NotifyMatchCompletedAsync(tournament.Id, match.Id, winnerId);
+
+                            if (tournament.Status == TournamentStatus.Completed)
+                            {
+                                // Placement XP points
+                                foreach (var placementResult in tournament.Results)
+                                {
+                                    var userToCredit = await _context.Users.FindAsync(new object[] { placementResult.UserId });
+                                    if (userToCredit != null)
+                                        userToCredit.AddPoints(placementResult.TotalPoints);
+                                }
+
+                                // Placement ELO bonuses (1st +50, 2nd +25, semi +10, quarter +5)
+                                await _rewardService.ApplyPlacementRewardsAsync(tournament.Id);
+
+                                var winnerUser = await _context.Users.FindAsync(new object[] { winnerId });
+                                var winnerUsername = winnerUser?.Username ?? "Champion";
+                                await _tournamentNotificationService.NotifyTournamentCompletedAsync(tournament.Id, winnerId, winnerUsername);
+                            }
+                        }
+                    }
+                }
             }
 
             await _context.SaveChangesAsync(default);

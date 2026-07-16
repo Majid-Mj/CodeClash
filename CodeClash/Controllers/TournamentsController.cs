@@ -16,8 +16,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace CodeClash.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Route("api/v1/[controller]")]
+[Authorize]
 public class TournamentsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -28,6 +28,7 @@ public class TournamentsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateTournamentCommand command)
     {
         var id = await _mediator.Send(command);
@@ -35,6 +36,7 @@ public class TournamentsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTournamentCommand command)
     {
         if (id != command.Id)
@@ -47,6 +49,7 @@ public class TournamentsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await _mediator.Send(new DeleteTournamentCommand(id));
@@ -70,13 +73,31 @@ public class TournamentsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/publish")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Publish(Guid id)
     {
         await _mediator.Send(new PublishTournamentCommand(id));
         return NoContent();
     }
 
+    [HttpPatch("{id:guid}/open-registration")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> OpenRegistration(Guid id)
+    {
+        await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.OpenRegistration.OpenRegistrationCommand(id));
+        return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/close-registration")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CloseRegistration(Guid id)
+    {
+        await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.CloseRegistration.CloseRegistrationCommand(id));
+        return NoContent();
+    }
+
     [HttpPatch("{id:guid}/cancel")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Cancel(Guid id)
     {
         await _mediator.Send(new CancelTournamentCommand(id));
@@ -116,6 +137,7 @@ public class TournamentsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/generate-bracket")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GenerateBracket(Guid id)
     {
         var result = await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.GenerateBracket.GenerateBracketCommand(id));
@@ -131,6 +153,7 @@ public class TournamentsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/matches/{matchId:guid}/result")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SubmitMatchResult(Guid id, Guid matchId, [FromBody] CodeClash.Application.Features.Tournaments.Commands.SubmitMatchResult.SubmitMatchResultCommand command)
     {
         if (id != command.TournamentId || matchId != command.MatchId)
@@ -149,9 +172,18 @@ public class TournamentsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/matches/{matchId:guid}/start")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> StartMatch(Guid id, Guid matchId)
     {
         await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.StartMatch.StartMatchCommand(id, matchId));
+        return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/matches/{matchId:guid}/schedule")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ScheduleMatch(Guid id, Guid matchId, [FromBody] CodeClash.Application.Features.Tournaments.Commands.ScheduleMatch.ScheduleMatchRequest dto)
+    {
+        await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.ScheduleMatch.ScheduleMatchCommand(id, matchId, dto.ScheduledTime));
         return NoContent();
     }
 

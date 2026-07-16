@@ -2,7 +2,7 @@ namespace CodeClash.Domain.Enums;
 
 public enum MatchStatus
 {
-    Upcoming,
-    Live,
+    Scheduled,
+    InProgress,
     Completed
 }

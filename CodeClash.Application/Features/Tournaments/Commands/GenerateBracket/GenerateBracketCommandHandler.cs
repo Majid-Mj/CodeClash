@@ -1,6 +1,7 @@
 using CodeClash.Application.Common.Interfaces;
 using CodeClash.Application.Features.Tournaments.DTOs;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.Application.Features.Tournaments.Commands.GenerateBracket;
 
@@ -24,6 +25,12 @@ public class GenerateBracketCommandHandler : IRequestHandler<GenerateBracketComm
 
         tournament.GenerateBracket();
 
+        var dbContext = (DbContext)_context;
+        foreach (var match in tournament.Matches)
+        {
+            dbContext.Entry(match).State = EntityState.Added;
+        }
+
         await _tournamentRepository.UpdateAsync(tournament, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -36,6 +43,7 @@ public class GenerateBracketCommandHandler : IRequestHandler<GenerateBracketComm
             Player2Id = m.Player2Id,
             WinnerId = m.WinnerId,
             Status = m.Status,
+            ScheduledTime = m.ScheduledTime,
             StartTime = m.StartTime,
             EndTime = m.EndTime
         }).ToList();

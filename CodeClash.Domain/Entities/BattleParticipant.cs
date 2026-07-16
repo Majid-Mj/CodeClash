@@ -10,6 +10,12 @@ public class BattleParticipant
     public DateTime JoinedAt { get; private set; }
     public int RatingBefore { get; private set; }
     public int? RatingAfter { get; private set; }
+    public bool HasJoinedRoom { get; private set; }
+
+    public void MarkJoinedRoom()
+    {
+        HasJoinedRoom = true;
+    }
 
     // Navigation properties
     public Battle Battle { get; private set; } = null!;

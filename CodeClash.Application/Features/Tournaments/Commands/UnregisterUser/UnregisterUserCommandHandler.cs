@@ -7,13 +7,16 @@ public class UnregisterUserCommandHandler : IRequestHandler<UnregisterUserComman
 {
     private readonly ITournamentRepository _tournamentRepository;
     private readonly IApplicationDbContext _context;
+    private readonly ITournamentNotificationService _notificationService;
 
     public UnregisterUserCommandHandler(
         ITournamentRepository tournamentRepository,
-        IApplicationDbContext context)
+        IApplicationDbContext context,
+        ITournamentNotificationService notificationService)
     {
         _tournamentRepository = tournamentRepository;
         _context = context;
+        _notificationService = notificationService;
     }
 
     public async Task Handle(UnregisterUserCommand request, CancellationToken cancellationToken)
@@ -29,5 +32,8 @@ public class UnregisterUserCommandHandler : IRequestHandler<UnregisterUserComman
 
         await _tournamentRepository.UpdateAsync(tournament, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Notify admin dashboard of the live participant count decrease
+        await _notificationService.NotifyTournamentRegistrationChangedAsync(tournament.Id, tournament.Registrations.Count);
     }
 }

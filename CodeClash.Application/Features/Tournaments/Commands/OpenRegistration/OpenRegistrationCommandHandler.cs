@@ -1,14 +1,18 @@
 using CodeClash.Application.Common.Interfaces;
 using MediatR;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
-namespace CodeClash.Application.Features.Tournaments.Commands.UpdateTournament;
+namespace CodeClash.Application.Features.Tournaments.Commands.OpenRegistration;
 
-public class UpdateTournamentCommandHandler : IRequestHandler<UpdateTournamentCommand>
+public class OpenRegistrationCommandHandler : IRequestHandler<OpenRegistrationCommand>
 {
     private readonly ITournamentRepository _tournamentRepository;
     private readonly IApplicationDbContext _context;
 
-    public UpdateTournamentCommandHandler(
+    public OpenRegistrationCommandHandler(
         ITournamentRepository tournamentRepository,
         IApplicationDbContext context)
     {
@@ -16,7 +20,7 @@ public class UpdateTournamentCommandHandler : IRequestHandler<UpdateTournamentCo
         _context = context;
     }
 
-    public async Task Handle(UpdateTournamentCommand request, CancellationToken cancellationToken)
+    public async Task Handle(OpenRegistrationCommand request, CancellationToken cancellationToken)
     {
         var tournament = await _tournamentRepository.GetByIdAsync(request.Id, cancellationToken);
 
@@ -25,15 +29,7 @@ public class UpdateTournamentCommandHandler : IRequestHandler<UpdateTournamentCo
             throw new KeyNotFoundException($"Tournament with Id {request.Id} not found.");
         }
 
-        tournament.Update(
-            request.Title,
-            request.Description,
-            request.StartDate,
-            request.EndDate,
-            request.MaxParticipants,
-            request.MinRating,
-            request.MaxRating,
-            request.Language);
+        tournament.OpenRegistration();
 
         await _tournamentRepository.UpdateAsync(tournament, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);

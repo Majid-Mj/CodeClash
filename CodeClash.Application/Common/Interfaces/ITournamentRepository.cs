@@ -10,4 +10,6 @@ public interface ITournamentRepository
     Task AddAsync(Tournament tournament, CancellationToken cancellationToken = default);
     Task UpdateAsync(Tournament tournament, CancellationToken cancellationToken = default);
     Task DeleteAsync(Tournament tournament, CancellationToken cancellationToken = default);
+    Task<int> ExecuteAtomicMatchResultUpdateAsync(Guid matchId, Guid winnerId, CancellationToken cancellationToken = default);
 }
+

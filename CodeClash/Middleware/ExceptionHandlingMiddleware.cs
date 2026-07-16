@@ -55,6 +55,26 @@ public class ExceptionHandlingMiddleware
             };
             await WriteResponse(context, HttpStatusCode.Unauthorized, problem);
         }
+        catch (InvalidOperationException ex)
+        {
+            var problem = new ProblemDetails
+            {
+                Status = (int)HttpStatusCode.BadRequest,
+                Title = "Bad Request",
+                Detail = ex.Message
+            };
+            await WriteResponse(context, HttpStatusCode.BadRequest, problem);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            var problem = new ProblemDetails
+            {
+                Status = (int)HttpStatusCode.NotFound,
+                Title = "Not Found",
+                Detail = ex.Message
+            };
+            await WriteResponse(context, HttpStatusCode.NotFound, problem);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception occurred");

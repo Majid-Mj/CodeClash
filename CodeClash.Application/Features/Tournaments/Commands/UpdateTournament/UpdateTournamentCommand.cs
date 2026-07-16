@@ -8,4 +8,7 @@ public record UpdateTournamentCommand(
     string Description,
     DateTime StartDate,
     DateTime EndDate,
-    int MaxParticipants) : IRequest;
+    int MaxParticipants,
+    int? MinRating = null,
+    int? MaxRating = null,
+    string? Language = null) : IRequest;

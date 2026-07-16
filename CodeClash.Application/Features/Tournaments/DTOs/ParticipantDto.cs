@@ -6,5 +6,6 @@ public class ParticipantDto
     public string Username { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string? ProfileImageUrl { get; set; }
+    public int Rating { get; set; }
     public DateTime RegisteredAt { get; set; }
 }

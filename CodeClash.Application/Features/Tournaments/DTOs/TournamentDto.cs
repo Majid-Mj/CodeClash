@@ -8,6 +8,10 @@ public class TournamentDto
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public int MaxParticipants { get; set; }
+    public int? MinRating { get; set; }
+    public int? MaxRating { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string? Language { get; set; }
+    public int ParticipantCount { get; set; }
     public DateTime CreatedAt { get; set; }
 }

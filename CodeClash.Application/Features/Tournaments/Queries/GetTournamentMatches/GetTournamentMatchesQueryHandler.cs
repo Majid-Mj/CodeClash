@@ -29,7 +29,10 @@ public class GetTournamentMatchesQueryHandler : IRequestHandler<GetTournamentMat
                 Player1Id = m.Player1Id,
                 Player2Id = m.Player2Id,
                 WinnerId = m.WinnerId,
+                BattleId = m.BattleId,
+                AssignedProblemId = m.AssignedProblemId,
                 Status = m.Status,
+                ScheduledTime = m.ScheduledTime,
                 StartTime = m.StartTime,
                 EndTime = m.EndTime
             })

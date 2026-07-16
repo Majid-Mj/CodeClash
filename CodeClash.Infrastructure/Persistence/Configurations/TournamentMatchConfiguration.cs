@@ -13,7 +13,9 @@ public class TournamentMatchConfiguration : IEntityTypeConfiguration<TournamentM
         builder.HasKey(tm => tm.Id);
 
         builder.Property(tm => tm.Status).IsRequired()
-            .HasConversion(s => s.ToString(), s => Enum.Parse<MatchStatus>(s))
+            .HasConversion(
+                s => s.ToString(),
+                s => s == "Upcoming" ? MatchStatus.Scheduled : s == "Live" ? MatchStatus.InProgress : Enum.Parse<MatchStatus>(s))
             .HasMaxLength(30);
 
         builder.Property(tm => tm.Round).IsRequired()
@@ -42,6 +44,11 @@ public class TournamentMatchConfiguration : IEntityTypeConfiguration<TournamentM
         builder.HasOne(tm => tm.AssignedProblem)
             .WithMany()
             .HasForeignKey(tm => tm.AssignedProblemId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne(tm => tm.Battle)
+            .WithMany()
+            .HasForeignKey(tm => tm.BattleId)
             .OnDelete(DeleteBehavior.NoAction);
     }
 }

@@ -37,6 +37,19 @@ public class BattleHub : Hub
             throw new HubException("Battle is not active.");
         }
 
+        // Set participant joined flag to prevent auto-forfeit
+        var userIdStr = Context.UserIdentifier;
+        if (!string.IsNullOrEmpty(userIdStr) && Guid.TryParse(userIdStr, out var userId))
+        {
+            var participant = await _context.BattleParticipants
+                .FirstOrDefaultAsync(bp => bp.BattleId == battleId && bp.UserId == userId);
+            if (participant != null)
+            {
+                participant.MarkJoinedRoom();
+                await _context.SaveChangesAsync();
+            }
+        }
+
         await Groups.AddToGroupAsync(Context.ConnectionId, battleIdStr);
         await Clients.Group(battleIdStr).SendAsync("PlayerConnected", Context.UserIdentifier);
     }

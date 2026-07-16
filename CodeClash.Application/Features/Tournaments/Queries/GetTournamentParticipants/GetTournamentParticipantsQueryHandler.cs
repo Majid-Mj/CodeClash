@@ -27,6 +27,7 @@ public class GetTournamentParticipantsQueryHandler : IRequestHandler<GetTourname
                 Username = r.User.Username,
                 FullName = r.User.FullName,
                 ProfileImageUrl = r.User.ProfileImageUrl,
+                Rating = r.User.Rating,
                 RegisteredAt = r.RegisteredAt
             })
             .ToListAsync(cancellationToken);

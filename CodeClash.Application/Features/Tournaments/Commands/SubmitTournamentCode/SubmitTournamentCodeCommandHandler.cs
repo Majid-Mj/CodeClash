@@ -28,8 +28,8 @@ public class SubmitTournamentCodeCommandHandler : IRequestHandler<SubmitTourname
         if (match == null)
             throw new KeyNotFoundException("Match not found.");
 
-        if (match.Status != MatchStatus.Live)
-            throw new InvalidOperationException("Match is not currently live.");
+        if (match.Status != MatchStatus.InProgress)
+            throw new InvalidOperationException("Match is not currently in progress.");
 
         if (match.Player1Id != request.UserId && match.Player2Id != request.UserId)
             throw new UnauthorizedAccessException("You are not a participant in this match.");

@@ -8,13 +8,16 @@ public class CreateTournamentCommandHandler : IRequestHandler<CreateTournamentCo
 {
     private readonly ITournamentRepository _tournamentRepository;
     private readonly IApplicationDbContext _context;
+    private readonly ITournamentNotificationService _notificationService;
 
     public CreateTournamentCommandHandler(
         ITournamentRepository tournamentRepository,
-        IApplicationDbContext context)
+        IApplicationDbContext context,
+        ITournamentNotificationService notificationService)
     {
         _tournamentRepository = tournamentRepository;
         _context = context;
+        _notificationService = notificationService;
     }
 
     public async Task<Guid> Handle(CreateTournamentCommand request, CancellationToken cancellationToken)
@@ -24,10 +27,16 @@ public class CreateTournamentCommandHandler : IRequestHandler<CreateTournamentCo
             request.Description,
             request.StartDate,
             request.EndDate,
-            request.MaxParticipants);
+            request.MaxParticipants,
+            request.MinRating,
+            request.MaxRating,
+            request.Language);
 
         await _tournamentRepository.AddAsync(tournament, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Notify eligible users within the specified rating band
+        await _notificationService.NotifyTournamentCreatedAsync(tournament.Id, tournament.Title, tournament.MinRating, tournament.MaxRating);
 
         return tournament.Id;
     }

@@ -45,6 +45,8 @@ public static class DependencyInjection
 
         services.AddScoped<IVectorStore, SqlVectorStore>();
 
+        services.AddHostedService<TournamentBackgroundService>();
+
         return services;
     }
 }

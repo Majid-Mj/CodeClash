@@ -24,6 +24,8 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<IMatchmakingQueueManager, MatchmakingQueueManager>();
 builder.Services.AddScoped<IBattleResolutionService, CodeClash.API.Services.BattleResolutionService>();
+builder.Services.AddScoped<ITournamentNotificationService, CodeClash.API.Services.TournamentNotificationService>();
+builder.Services.AddScoped<ITournamentMatchRewardService, CodeClash.API.Services.TournamentMatchRewardService>();
 
 var homePath = Environment.GetEnvironmentVariable("HOME");
 var dpFolder = !string.IsNullOrEmpty(homePath)
@@ -522,6 +524,7 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
 app.UseCors("AllowAngular");
 app.UseRateLimiter();
 app.UseAuthentication();
@@ -530,5 +533,6 @@ app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapHub<MatchmakingHub>("/hubs/matchmaking");
 app.MapHub<BattleHub>("/hubs/battle");
+app.MapHub<TournamentHub>("/hubs/tournament");
 
 app.Run();

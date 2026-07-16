@@ -25,7 +25,11 @@ public class GetTournamentsQueryHandler : IRequestHandler<GetTournamentsQuery, I
             StartDate = t.StartDate,
             EndDate = t.EndDate,
             MaxParticipants = t.MaxParticipants,
+            MinRating = t.MinRating,
+            MaxRating = t.MaxRating,
             Status = t.Status.ToString(),
+            Language = t.Language,
+            ParticipantCount = t.Registrations.Count,
             CreatedAt = t.CreatedAt
         });
     }

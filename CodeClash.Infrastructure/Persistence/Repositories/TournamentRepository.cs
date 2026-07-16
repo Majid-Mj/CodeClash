@@ -23,6 +23,7 @@ public class TournamentRepository : ITournamentRepository
     {
         return await _context.Tournaments
             .Include(t => t.Registrations)
+                .ThenInclude(r => r.User)
             .Include(t => t.Matches)
             .Include(t => t.Results)
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
@@ -31,6 +32,7 @@ public class TournamentRepository : ITournamentRepository
     public async Task<IEnumerable<Tournament>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Tournaments
+            .Include(t => t.Registrations)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync(cancellationToken);
     }
@@ -42,7 +44,10 @@ public class TournamentRepository : ITournamentRepository
 
     public Task UpdateAsync(Tournament tournament, CancellationToken cancellationToken = default)
     {
-        _context.Tournaments.Update(tournament);
+        if (_context.Entry(tournament).State == EntityState.Detached)
+        {
+            _context.Tournaments.Update(tournament);
+        }
         return Task.CompletedTask;
     }
 
@@ -51,4 +56,13 @@ public class TournamentRepository : ITournamentRepository
         _context.Tournaments.Remove(tournament);
         return Task.CompletedTask;
     }
+
+    public async Task<int> ExecuteAtomicMatchResultUpdateAsync(Guid matchId, Guid winnerId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Database.ExecuteSqlRawAsync(
+            "UPDATE TournamentMatches SET Status = 'Completed', WinnerId = {0}, EndTime = {1} WHERE Id = {2} AND (Status = 'InProgress' OR Status = 'Live')",
+            new object[] { winnerId, DateTime.UtcNow, matchId },
+            cancellationToken);
+    }
 }
+

@@ -1,7 +1,4 @@
 <Solution>
-  <Folder Name="/scratch/">
-    <Project Path="scratch/db_helper/db_helper.csproj" />
-  </Folder>
   <Project Path="CodeClash.Application/CodeClash.Application.csproj" Id="1122d326-1f3e-4311-bbb8-b5827578703e" />
   <Project Path="CodeClash.Domain/CodeClash.Domain.csproj" Id="8dcea387-c65e-43e0-9bcb-ff9b511c54c3" />
   <Project Path="CodeClash.Infrastructure/CodeClash.Infrastructure.csproj" Id="77a9fc87-c620-432e-b7aa-58b0874f37c0" />

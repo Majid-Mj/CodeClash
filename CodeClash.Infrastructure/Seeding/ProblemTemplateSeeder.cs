@@ -75,6 +75,8 @@ public class Solution {
 """),
 
         ("python", """
+from typing import *
+from collections import *
 import sys
 import re
 
@@ -278,6 +280,8 @@ public class Solution {
 """),
 
         ("python", """
+from typing import *
+from collections import *
 import sys
 
 {{submission}}
@@ -396,6 +400,8 @@ public class Solution {
 """),
 
         ("python", """
+from typing import *
+from collections import *
 import sys
 
 {{submission}}
@@ -521,6 +527,8 @@ public class Solution {
 """),
 
         ("python", """
+from typing import *
+from collections import *
 import sys
 
 {{submission}}
@@ -687,8 +695,9 @@ public class Solution {
 """),
 
         ("python", """
+from typing import *
+from collections import *
 import sys
-from collections import deque
 
 class TreeNode:
     def __init__(self, val=0, left=None, right=None):

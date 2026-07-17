@@ -29,19 +29,20 @@ public class MatchmakingController : ControllerBase
         return Ok(new { queueId });
     }
 
-    [HttpGet("battle/{id}")]
+    [HttpGet("battle/{id:guid}")]
     public async Task<IActionResult> GetBattleDetails(Guid id)
     {
         var battle = await _context.Battles
             .Include(b => b.Participants)
-            .ThenInclude(p => p.User)
+                .ThenInclude(p => p.User)
             .FirstOrDefaultAsync(b => b.Id == id);
 
         if (battle == null)
         {
-            return NotFound("Battle not found.");
+            return NotFound(new { message = "Battle not found." });
         }
 
+        // Calculate timeRemainingSeconds
         int durationSeconds = 1800; // default 30 mins
         var diff = battle.Difficulty;
         if (diff == Difficulty.Easy) durationSeconds = 600;
@@ -64,11 +65,14 @@ public class MatchmakingController : ControllerBase
 
         return Ok(new
         {
+            id = battle.Id,
             battleId = battle.Id,
             status = battle.Status.ToString(),
+            problemId = battle.ProblemId,
             startTime = battle.StartTime,
-            durationSeconds,
+            durationSeconds = durationSeconds,
             timeRemainingSeconds = (int)Math.Floor(timeRemainingSeconds),
+            mode = battle.Mode,
             participants
         });
     }

@@ -25,15 +25,45 @@ public class TournamentNotificationService : ITournamentNotificationService
         _dbContext = dbContext;
     }
 
-    public async Task NotifyMatchStartedAsync(Guid tournamentId, Guid matchId, Guid? p1Id, Guid? p2Id, Guid battleId, string? language)
+    public async Task NotifyMatchStartedAsync(Guid tournamentId, Guid matchId, Guid? p1Id, Guid? p2Id, Guid battleId, Guid problemId, string? language)
     {
+        string p1Username = "TBD";
+        string p2Username = "TBD";
+        int p1Rating = 1200;
+        int p2Rating = 1200;
+
+        if (p1Id.HasValue)
+        {
+            var user1 = await _dbContext.Users.FindAsync(new object[] { p1Id.Value });
+            if (user1 != null)
+            {
+                p1Username = user1.Username;
+                p1Rating = user1.Rating;
+            }
+        }
+
+        if (p2Id.HasValue)
+        {
+            var user2 = await _dbContext.Users.FindAsync(new object[] { p2Id.Value });
+            if (user2 != null)
+            {
+                p2Username = user2.Username;
+                p2Rating = user2.Rating;
+            }
+        }
+
         await _hubContext.Clients.Group($"Tournament_{tournamentId}").SendAsync("MatchStarted", new
         {
             tournamentId,
             matchId,
             player1Id = p1Id,
             player2Id = p2Id,
+            player1Username = p1Username,
+            player2Username = p2Username,
+            player1Elo = p1Rating,
+            player2Elo = p2Rating,
             battleId,
+            problemId,
             language
         });
     }

@@ -5,7 +5,7 @@ namespace CodeClash.Application.Common.Interfaces;
 
 public interface ITournamentNotificationService
 {
-    Task NotifyMatchStartedAsync(Guid tournamentId, Guid matchId, Guid? p1Id, Guid? p2Id, Guid battleId, string? language);
+    Task NotifyMatchStartedAsync(Guid tournamentId, Guid matchId, Guid? p1Id, Guid? p2Id, Guid battleId, Guid problemId, string? language);
     Task NotifyBracketUpdatedAsync(Guid tournamentId);
     Task NotifyTournamentCompletedAsync(Guid tournamentId, Guid winnerId, string winnerUsername);
     Task NotifyTournamentCreatedAsync(Guid tournamentId, string title, int? minRating, int? maxRating);

@@ -180,10 +180,12 @@ public class TournamentsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/matches/{matchId:guid}/schedule")]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public async Task<IActionResult> ScheduleMatch(Guid id, Guid matchId, [FromBody] CodeClash.Application.Features.Tournaments.Commands.ScheduleMatch.ScheduleMatchRequest dto)
     {
-        await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.ScheduleMatch.ScheduleMatchCommand(id, matchId, dto.ScheduledTime));
+        var userId = User.GetUserId();
+        var isAdmin = User.IsInRole("Admin");
+        await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.ScheduleMatch.ScheduleMatchCommand(id, matchId, dto.ScheduledTime, userId, isAdmin));
         return NoContent();
     }
 

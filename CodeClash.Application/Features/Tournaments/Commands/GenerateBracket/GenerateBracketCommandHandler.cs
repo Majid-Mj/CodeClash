@@ -45,7 +45,8 @@ public class GenerateBracketCommandHandler : IRequestHandler<GenerateBracketComm
             Status = m.Status,
             ScheduledTime = m.ScheduledTime,
             StartTime = m.StartTime,
-            EndTime = m.EndTime
+            EndTime = m.EndTime,
+            Language = tournament.Language
         }).ToList();
     }
 }

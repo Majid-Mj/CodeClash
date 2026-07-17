@@ -16,4 +16,5 @@ public class MatchDto
     public DateTime ScheduledTime { get; set; }
     public DateTime? StartTime { get; set; }
     public DateTime? EndTime { get; set; }
+    public string? Language { get; set; }
 }

@@ -1,6 +1,7 @@
 using CodeClash.Application.Common.Interfaces;
 using CodeClash.Domain.Enums;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.Application.Features.Tournaments.Commands.ScheduleMatch;
 
@@ -39,7 +40,17 @@ public class ScheduleMatchCommandHandler : IRequestHandler<ScheduleMatchCommand>
             throw new InvalidOperationException("Only scheduled matches can have their time modified.");
         }
 
+        // Authorize: Admin or match participant
+        if (!request.IsAdmin && match.Player1Id != request.UserId && match.Player2Id != request.UserId)
+        {
+            throw new UnauthorizedAccessException("Only the match participants or an admin can schedule this match.");
+        }
+
         match.SetScheduledTime(request.ScheduledTime);
+
+        // Explicitly set entity state to Modified to guarantee EF Core detects and persists the change
+        var dbContext = (DbContext)_context;
+        dbContext.Entry(match).State = EntityState.Modified;
 
         await _tournamentRepository.UpdateAsync(tournament, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);

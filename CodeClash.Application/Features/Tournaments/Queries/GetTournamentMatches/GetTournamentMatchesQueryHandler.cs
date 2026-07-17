@@ -34,7 +34,8 @@ public class GetTournamentMatchesQueryHandler : IRequestHandler<GetTournamentMat
                 Status = m.Status,
                 ScheduledTime = m.ScheduledTime,
                 StartTime = m.StartTime,
-                EndTime = m.EndTime
+                EndTime = m.EndTime,
+                Language = m.Tournament.Language
             })
             .ToListAsync(cancellationToken);
 

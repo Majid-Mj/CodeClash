@@ -145,6 +145,7 @@ public class StartMatchCommandHandler : IRequestHandler<StartMatchCommand>
             match.Player1Id,
             match.Player2Id,
             battle.Id,
+            problem.Id,
             tournament.Language);
     }
 }

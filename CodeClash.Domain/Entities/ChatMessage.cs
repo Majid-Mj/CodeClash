@@ -23,7 +23,6 @@ public class ChatMessage
     internal static ChatMessage Create(Guid sessionId, string role, string content)
         => new()
         {
-            Id = Guid.NewGuid(),
             SessionId = sessionId,
             Role = role,
             Content = content,

@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using CodeClash.Application.Common.Interfaces;
 using CodeClash.Domain.Enums;
-using System.Linq;
 
 namespace CodeClash.API.Controllers;
 
@@ -30,7 +30,7 @@ public class MatchmakingController : ControllerBase
     }
 
     [HttpGet("battle/{id:guid}")]
-    public async Task<IActionResult> GetBattleDetails(Guid id)
+    public async Task<IActionResult> GetBattleById(Guid id)
     {
         var battle = await _context.Battles
             .Include(b => b.Participants)
@@ -42,7 +42,7 @@ public class MatchmakingController : ControllerBase
             return NotFound(new { message = "Battle not found." });
         }
 
-        // Calculate timeRemainingSeconds
+        // Calculate duration based on difficulty
         int durationSeconds = 1800; // default 30 mins
         var diff = battle.Difficulty;
         if (diff == Difficulty.Easy) durationSeconds = 600;
@@ -68,9 +68,9 @@ public class MatchmakingController : ControllerBase
             id = battle.Id,
             battleId = battle.Id,
             status = battle.Status.ToString(),
-            problemId = battle.ProblemId,
             startTime = battle.StartTime,
-            durationSeconds = durationSeconds,
+            problemId = battle.ProblemId,
+            durationSeconds,
             timeRemainingSeconds = (int)Math.Floor(timeRemainingSeconds),
             mode = battle.Mode,
             participants

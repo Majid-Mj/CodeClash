@@ -23,7 +23,7 @@ jobs:
       - name: Zip Package
         run: |
           cd publish
-          zip -r ../deploy.zip .
+          zip -r ../publish.zip .
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
@@ -34,4 +34,4 @@ jobs:
           application_name: codeclash
           environment_name: Codeclash-env
           version_label: ${{ github.sha }}
-          deployment_package: deploy.zip
+          deployment_package: publish.zip

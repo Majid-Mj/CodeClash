@@ -1,4 +1,4 @@
-﻿using CodeClash.Application.Common.Interfaces;
+using CodeClash.Application.Common.Interfaces;
 using CodeClash.Application.Features.Chatbot.Dtos;
 using CodeClash.Domain.Entities;
 using System.Text;
@@ -79,6 +79,7 @@ public sealed class RagChatbotService : IRagChatbotService
         var sb = new StringBuilder();
         sb.AppendLine("You are CodeClash Assistant — a helpful AI for competitive programmers.");
         sb.AppendLine("Answer concisely. When citing knowledge sources, use [1], [2], etc.");
+        sb.AppendLine("If the user asks a general programming, debugging, or algorithmic question (such as explaining Binary Search, sorting, or data structures), you should use your general pre-trained knowledge to answer them fully. Only restrict yourself to the provided knowledge sources when answering questions specific to the CodeClash platform rules, scoring, and features.");
         sb.AppendLine();
 
         if (problem is not null)

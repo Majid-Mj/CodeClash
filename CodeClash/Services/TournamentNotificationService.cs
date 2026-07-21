@@ -171,5 +171,56 @@ public class TournamentNotificationService : ITournamentNotificationService
             winnerId
         });
     }
+
+    public async Task NotifyMatchScheduledAsync(Guid tournamentId, Guid matchId, Guid? p1Id, Guid? p2Id, DateTime scheduledTime)
+    {
+        var tournament = await _dbContext.Tournaments
+            .Include(t => t.Registrations)
+            .FirstOrDefaultAsync(t => t.Id == tournamentId);
+
+        var title = tournament?.Title ?? "Tournament";
+        var timeFormatted = scheduledTime.ToString("MMM d, yyyy h:mm tt UTC");
+        var message = $"Your tournament match in '{title}' has been scheduled for {timeFormatted}.";
+
+        var targetUserIds = new List<Guid>();
+        if (p1Id.HasValue) targetUserIds.Add(p1Id.Value);
+        if (p2Id.HasValue && !targetUserIds.Contains(p2Id.Value)) targetUserIds.Add(p2Id.Value);
+
+        if (!targetUserIds.Any() && tournament != null)
+        {
+            targetUserIds.AddRange(tournament.Registrations.Select(r => r.UserId));
+        }
+
+        if (targetUserIds.Any())
+        {
+            var notifications = targetUserIds.Select(uId => new Notification(uId, "Match Scheduled", message, "info")).ToList();
+            _dbContext.Notifications.AddRange(notifications);
+            await _dbContext.SaveChangesAsync(default);
+
+            foreach (var uId in targetUserIds)
+            {
+                await _notificationHubContext.Clients.User(uId.ToString()).SendAsync("ReceiveNotification", new
+                {
+                    title = "Match Scheduled",
+                    message = message,
+                    type = "info"
+                });
+            }
+        }
+
+        var payload = new
+        {
+            tournamentId,
+            matchId,
+            player1Id = p1Id,
+            player2Id = p2Id,
+            scheduledTime = scheduledTime.ToString("o")
+        };
+
+        await _hubContext.Clients.Group($"Tournament_{tournamentId}").SendAsync("MatchScheduled", payload);
+        await _hubContext.Clients.Group($"Tournament_{tournamentId}").SendAsync("BracketUpdated", new { tournamentId });
+        await _hubContext.Clients.Group("AdminDashboard").SendAsync("MatchScheduled", payload);
+        await _hubContext.Clients.Group("AdminDashboard").SendAsync("BracketUpdated", new { tournamentId });
+    }
 }
 

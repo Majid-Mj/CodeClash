@@ -46,7 +46,11 @@ public class ScheduleMatchCommandHandler : IRequestHandler<ScheduleMatchCommand>
             throw new UnauthorizedAccessException("Only the match participants or an admin can schedule this match.");
         }
 
-        match.SetScheduledTime(request.ScheduledTime);
+        var scheduledTimeUtc = request.ScheduledTime.Kind == DateTimeKind.Utc 
+            ? request.ScheduledTime 
+            : DateTime.SpecifyKind(request.ScheduledTime, DateTimeKind.Utc);
+
+        match.SetScheduledTime(scheduledTimeUtc);
 
         // Explicitly set entity state to Modified to guarantee EF Core detects and persists the change
         var dbContext = (DbContext)_context;
@@ -55,6 +59,6 @@ public class ScheduleMatchCommandHandler : IRequestHandler<ScheduleMatchCommand>
         await _tournamentRepository.UpdateAsync(tournament, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
-        await _tournamentNotificationService.NotifyBracketUpdatedAsync(tournament.Id);
+        await _tournamentNotificationService.NotifyMatchScheduledAsync(tournament.Id, match.Id, match.Player1Id, match.Player2Id, scheduledTimeUtc);
     }
 }

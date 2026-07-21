@@ -72,6 +72,22 @@ public class TournamentsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("{id:guid}/details")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetDetails(Guid id)
+    {
+        var result = await _mediator.Send(new CodeClash.Application.Features.Tournaments.Queries.GetTournamentDetails.GetTournamentDetailsQuery(id));
+        return Ok(result);
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] StatusUpdateRequest request)
+    {
+        await _mediator.Send(new CodeClash.Application.Features.Tournaments.Commands.UpdateTournamentStatus.UpdateTournamentStatusCommand(id, request.Status));
+        return NoContent();
+    }
+
     [HttpPatch("{id:guid}/publish")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Publish(Guid id)
@@ -198,3 +214,6 @@ public class TournamentsController : ControllerBase
         return Ok(result);
     }
 }
+
+public record StatusUpdateRequest(string Status);
+

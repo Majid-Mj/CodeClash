@@ -11,5 +11,6 @@ public interface ITournamentNotificationService
     Task NotifyTournamentCreatedAsync(Guid tournamentId, string title, int? minRating, int? maxRating);
     Task NotifyTournamentRegistrationChangedAsync(Guid tournamentId, int participantCount);
     Task NotifyMatchCompletedAsync(Guid tournamentId, Guid matchId, Guid winnerId);
+    Task NotifyMatchScheduledAsync(Guid tournamentId, Guid matchId, Guid? p1Id, Guid? p2Id, DateTime scheduledTime);
 }
 
